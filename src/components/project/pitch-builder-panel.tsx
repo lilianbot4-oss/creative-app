@@ -48,6 +48,7 @@ export default function PitchBuilderPanel({
   const [includeReferences, setIncludeReferences] = useState(true);
   const [includeFeedback, setIncludeFeedback] = useState(false);
   const [includeProvenance, setIncludeProvenance] = useState(false);
+  const [includeGallery, setIncludeGallery] = useState(false);
   const [runningStep, setRunningStep] = useState<string | null>(null);
 
   const storyboardCount = useMemo(
@@ -67,11 +68,12 @@ export default function PitchBuilderPanel({
     if (!includeReferences) params.set("refs", "false");
     if (includeFeedback) params.set("feedback", "true");
     if (includeProvenance) params.set("provenance", "true");
+    if (includeGallery) params.set("gallery", "true");
     if (selectedConcepts.length) params.set("concepts", selectedConcepts.join(","));
     if (selectedVariantId !== "none") params.set("variant", selectedVariantId);
     const query = params.toString();
     return `/app/projects/${projectId}/pitch${query ? `?${query}` : ""}`;
-  }, [projectId, includeConstraints, includeAppendix, includeReferences, includeFeedback, includeProvenance, selectedConcepts, selectedVariantId]);
+  }, [projectId, includeConstraints, includeAppendix, includeReferences, includeFeedback, includeProvenance, includeGallery, selectedConcepts, selectedVariantId]);
 
   const toggleConcept = (conceptId: string) => {
     setSelectedConcepts((prev) => {
@@ -228,6 +230,14 @@ export default function PitchBuilderPanel({
                     onChange={(event) => setIncludeProvenance(event.target.checked)}
                   />
                   Include provenance (internal)
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={includeGallery}
+                    onChange={(event) => setIncludeGallery(event.target.checked)}
+                  />
+                  Include image gallery
                 </label>
               </div>
             </div>

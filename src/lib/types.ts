@@ -158,6 +158,25 @@ export type ProjectBriefUpload = {
   created_at: string;
 };
 
+export type ConceptAsset = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  concept_id: string | null;
+  variant_id: string | null;
+  script_id: string | null;
+  asset_type: "key_visual" | "moodboard" | "storyboard_frame" | string;
+  prompt_text: string | null;
+  storage_bucket: string;
+  storage_path: string;
+  mime_type: string | null;
+  width: number | null;
+  height: number | null;
+  file_size: number | null;
+  is_primary: boolean;
+  created_at: string;
+};
+
 export type Storyboard = {
   id: string;
   user_id: string;

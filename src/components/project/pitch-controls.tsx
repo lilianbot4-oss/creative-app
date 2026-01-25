@@ -14,6 +14,7 @@ export default function PitchControls() {
   const [includeReferences, setIncludeReferences] = useState(true);
   const [includeFeedback, setIncludeFeedback] = useState(false);
   const [includeProvenance, setIncludeProvenance] = useState(false);
+  const [includeGallery, setIncludeGallery] = useState(false);
 
   useEffect(() => {
     setIncludeConstraints(searchParams.get("constraints") !== "false");
@@ -21,6 +22,7 @@ export default function PitchControls() {
     setIncludeReferences(searchParams.get("refs") !== "false");
     setIncludeFeedback(searchParams.get("feedback") === "true");
     setIncludeProvenance(searchParams.get("provenance") === "true");
+    setIncludeGallery(searchParams.get("gallery") === "true");
   }, [searchParams]);
 
   const updateParam = (key: string, value: boolean, truthyValue = "true") => {
@@ -90,6 +92,17 @@ export default function PitchControls() {
             }}
           />
           Include provenance (internal)
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={includeGallery}
+            onChange={(event) => {
+              setIncludeGallery(event.target.checked);
+              updateParam("gallery", event.target.checked, "true");
+            }}
+          />
+          Include image gallery
         </label>
       </div>
       <div className="flex gap-2">

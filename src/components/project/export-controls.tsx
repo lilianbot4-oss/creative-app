@@ -13,12 +13,14 @@ export default function ExportControls() {
   const [includeFeedback, setIncludeFeedback] = useState(true);
   const [includeAppendix, setIncludeAppendix] = useState(true);
   const [includeProvenance, setIncludeProvenance] = useState(false);
+  const [includeGallery, setIncludeGallery] = useState(false);
 
   useEffect(() => {
     setIncludeReferences(searchParams.get("refs") !== "false");
     setIncludeFeedback(searchParams.get("feedback") !== "false");
     setIncludeAppendix(searchParams.get("appendix") !== "false");
     setIncludeProvenance(searchParams.get("provenance") === "true");
+    setIncludeGallery(searchParams.get("gallery") === "true");
   }, [searchParams]);
 
   const updateParam = (key: string, value: boolean) => {
@@ -77,6 +79,17 @@ export default function ExportControls() {
             }}
           />
           Include provenance (internal)
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={includeGallery}
+            onChange={(event) => {
+              setIncludeGallery(event.target.checked);
+              updateParam("gallery", event.target.checked);
+            }}
+          />
+          Include image gallery
         </label>
       </div>
       <div className="flex gap-2">

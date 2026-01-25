@@ -478,3 +478,55 @@ alter table public.scripts
 
 create index if not exists concepts_origin_type_idx on public.concepts (origin_type);
 create index if not exists scripts_origin_type_idx on public.scripts (origin_type);
+
+-- PHASE 5+ CONCEPT ASSETS (KEY VISUALS)
+-- Run the statements below in the Supabase SQL Editor to apply the latest schema updates.
+-- All statements are intended to be safe to run on an existing database (idempotent).
+
+create table if not exists public.concept_assets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users (id) on delete cascade not null,
+  project_id uuid references public.projects (id) on delete cascade not null,
+  concept_id uuid references public.concepts (id) on delete set null,
+  variant_id uuid references public.concept_variants (id) on delete set null,
+  script_id uuid references public.scripts (id) on delete set null,
+  asset_type text not null default 'key_visual',
+  prompt_text text null,
+  storage_bucket text not null default 'assets',
+  storage_path text not null,
+  mime_type text null,
+  width int null,
+  height int null,
+  file_size int null,
+  is_primary boolean default false,
+  created_at timestamptz default now()
+);
+
+create index if not exists concept_assets_project_idx
+  on public.concept_assets (project_id, created_at desc);
+create index if not exists concept_assets_concept_idx
+  on public.concept_assets (concept_id, created_at desc);
+create index if not exists concept_assets_variant_idx
+  on public.concept_assets (variant_id, created_at desc);
+create index if not exists concept_assets_script_idx
+  on public.concept_assets (script_id, created_at desc);
+
+create unique index if not exists concept_assets_primary_key_visual_unique
+  on public.concept_assets (concept_id)
+  where is_primary = true and asset_type = 'key_visual' and concept_id is not null;
+
+alter table public.concept_assets enable row level security;
+
+drop policy if exists "Concept assets are viewable by owner" on public.concept_assets;
+drop policy if exists "Concept assets are insertable by owner" on public.concept_assets;
+drop policy if exists "Concept assets are updatable by owner" on public.concept_assets;
+drop policy if exists "Concept assets are deletable by owner" on public.concept_assets;
+
+create policy "Concept assets are viewable by owner" on public.concept_assets
+  for select using (auth.uid() = user_id);
+create policy "Concept assets are insertable by owner" on public.concept_assets
+  for insert with check (auth.uid() = user_id);
+create policy "Concept assets are updatable by owner" on public.concept_assets
+  for update using (auth.uid() = user_id);
+create policy "Concept assets are deletable by owner" on public.concept_assets
+  for delete using (auth.uid() = user_id);

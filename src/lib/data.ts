@@ -9,6 +9,7 @@ import type {
   CreativeSpec,
   Concept,
   ConceptVariant,
+  ConceptAsset,
   ProjectBriefUpload,
   Script,
   Storyboard,
@@ -175,6 +176,41 @@ export async function listBriefUploads(projectId: string) {
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as ProjectBriefUpload[];
+}
+
+export async function listConceptAssetsByProject(projectId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("concept_assets")
+    .select("*")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ConceptAsset[];
+}
+
+export async function listConceptAssetsByConcept(conceptId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("concept_assets")
+    .select("*")
+    .eq("concept_id", conceptId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ConceptAsset[];
+}
+
+export async function getPrimaryKeyVisualForConcept(conceptId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("concept_assets")
+    .select("*")
+    .eq("concept_id", conceptId)
+    .eq("asset_type", "key_visual")
+    .eq("is_primary", true)
+    .maybeSingle();
+  if (error) throw error;
+  return data as ConceptAsset | null;
 }
 
 export async function upsertCreativeSpec(input: {

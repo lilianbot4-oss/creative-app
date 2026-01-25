@@ -9,6 +9,7 @@ import {
   listConcepts,
   listVariants,
   listScripts,
+  listConceptAssetsByProject,
   listBriefUploads,
   getStoryboard,
 } from "@/lib/data";
@@ -40,18 +41,30 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     notFound();
   }
 
-  const [brief, outputs, feedback, references, creativeSpec, concepts, scripts, aiSettings, briefUploads] =
+  const [
+    brief,
+    outputs,
+    feedback,
+    references,
+    creativeSpec,
+    concepts,
+    scripts,
+    aiSettings,
+    briefUploads,
+    conceptAssets,
+  ] =
     await Promise.all([
-    getLatestBrief(projectId),
-    getOutputs(projectId),
-    getFeedback(projectId),
-    getReferences(projectId),
-    getCreativeSpec(projectId),
-    listConcepts(projectId),
-    listScripts(projectId),
-    getResolvedAISettings(projectId),
-    listBriefUploads(projectId),
-  ]);
+      getLatestBrief(projectId),
+      getOutputs(projectId),
+      getFeedback(projectId),
+      getReferences(projectId),
+      getCreativeSpec(projectId),
+      listConcepts(projectId),
+      listScripts(projectId),
+      getResolvedAISettings(projectId),
+      listBriefUploads(projectId),
+      listConceptAssetsByProject(projectId),
+    ]);
 
   const variantsByConceptEntries = await Promise.all(
     concepts.map(async (concept) => {
@@ -69,6 +82,12 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   );
   const storyboardsByScript = Object.fromEntries(storyboardsEntries);
 
+  const assetsByConceptEntries = concepts.map((concept) => {
+    const assets = conceptAssets.filter((asset) => asset.concept_id === concept.id);
+    return [concept.id, assets];
+  });
+  const assetsByConcept = Object.fromEntries(assetsByConceptEntries);
+
   return (
     <ProjectWorkspace
       project={project}
@@ -80,6 +99,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       feedback={feedback}
       references={references}
       concepts={concepts}
+      assetsByConcept={assetsByConcept}
       variantsByConcept={variantsByConcept}
       scripts={scripts}
       storyboardsByScript={storyboardsByScript}

@@ -6,6 +6,7 @@ import {
   getOutputs,
   getReferences,
   getStoryboard,
+  listConceptAssetsByProject,
   listConcepts,
   listScripts,
   listVariants,
@@ -14,6 +15,7 @@ import { GENERATION_MODE_LABELS, SCRIPT_FORMAT_LABELS } from "@/lib/constants";
 import PitchControls from "@/components/project/pitch-controls";
 import MarkdownContent from "@/components/markdown/markdown-content";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getPublicStorageUrl } from "@/lib/storage";
 import type { Client, ConceptVariant, Project } from "@/lib/types";
 
 interface PitchPageProps {
@@ -24,6 +26,7 @@ interface PitchPageProps {
     refs?: string;
     feedback?: string;
     provenance?: string;
+    gallery?: string;
     concepts?: string;
     variant?: string;
   }> | {
@@ -32,6 +35,7 @@ interface PitchPageProps {
     refs?: string;
     feedback?: string;
     provenance?: string;
+    gallery?: string;
     concepts?: string;
     variant?: string;
   };
@@ -45,6 +49,7 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
   const includeReferences = resolvedSearch?.refs !== "false";
   const includeFeedback = resolvedSearch?.feedback === "true";
   const includeProvenance = resolvedSearch?.provenance === "true";
+  const includeGallery = resolvedSearch?.gallery === "true";
   const conceptIds = resolvedSearch?.concepts
     ? resolvedSearch.concepts.split(",").filter(Boolean)
     : [];
@@ -68,13 +73,14 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
     notFound();
   }
 
-  const [creativeSpec, concepts, scripts, outputs, feedback, references] = await Promise.all([
+  const [creativeSpec, concepts, scripts, outputs, feedback, references, conceptAssets] = await Promise.all([
     getCreativeSpec(projectId),
     listConcepts(projectId),
     listScripts(projectId),
     getOutputs(projectId),
     getFeedback(projectId),
     getReferences(projectId),
+    listConceptAssetsByProject(projectId),
   ]);
 
   const variantsByConceptEntries = await Promise.all(
@@ -89,6 +95,12 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
     conceptIds.length > 0
       ? concepts.filter((concept) => conceptIds.includes(concept.id))
       : concepts.slice(0, 3);
+
+  const primaryVisualByConcept = new Map(
+    conceptAssets
+      .filter((asset) => asset.asset_type === "key_visual" && asset.is_primary && asset.concept_id)
+      .map((asset) => [asset.concept_id as string, asset])
+  );
 
   const selectedVariant = selectedVariantId
     ? Object.values(variantsByConcept).flat().find((variant) => variant.id === selectedVariantId)
@@ -222,6 +234,19 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
                       Provenance: {concept.origin_type ?? "human"}
                     </p>
                   ) : null}
+                  {primaryVisualByConcept.get(concept.id) ? (
+                    <div className="mt-3 overflow-hidden rounded-xl border border-border/60">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={getPublicStorageUrl(
+                          primaryVisualByConcept.get(concept.id)!.storage_bucket,
+                          primaryVisualByConcept.get(concept.id)!.storage_path
+                        )}
+                        alt="Primary key visual"
+                        className="h-48 w-full object-cover"
+                      />
+                    </div>
+                  ) : null}
                   {concept.one_liner ? (
                     <p className="text-muted-foreground">{concept.one_liner}</p>
                   ) : null}
@@ -301,6 +326,26 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
                   {JSON.stringify(storyboard.shotlist, null, 2)}
                 </pre>
               ) : null}
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {includeGallery && conceptAssets.length > 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Image gallery</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 md:grid-cols-2">
+              {conceptAssets.map((asset) => (
+                <div key={asset.id} className="overflow-hidden rounded-xl border border-border/60">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={getPublicStorageUrl(asset.storage_bucket, asset.storage_path)}
+                    alt="Generated visual"
+                    className="h-40 w-full object-cover"
+                  />
+                </div>
+              ))}
             </CardContent>
           </Card>
         ) : null}

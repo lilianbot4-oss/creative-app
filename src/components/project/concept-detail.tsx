@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { Concept, ConceptVariant } from "@/lib/types";
+import type { Concept, ConceptAsset, ConceptVariant } from "@/lib/types";
+import { getPublicStorageUrl } from "@/lib/storage";
 
 const ORIGIN_LABELS: Record<string, string> = {
   human: "Human",
@@ -15,11 +16,15 @@ const ORIGIN_LABELS: Record<string, string> = {
 export default function ConceptDetail({
   concept,
   variants,
+  assets,
 }: {
   concept: Concept;
   variants: ConceptVariant[];
+  assets: ConceptAsset[];
 }) {
   const [open, setOpen] = useState(false);
+  const keyVisuals = assets.filter((asset) => asset.asset_type === "key_visual");
+  const primaryAsset = keyVisuals.find((asset) => asset.is_primary) ?? null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -39,6 +44,36 @@ export default function ConceptDetail({
               <span className="text-xs text-muted-foreground">Seed: {concept.seed_text}</span>
             ) : null}
           </div>
+          {primaryAsset ? (
+            <div className="space-y-2">
+              <p className="font-medium">Primary key visual</p>
+              <div className="overflow-hidden rounded-xl border border-border/60">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={getPublicStorageUrl(primaryAsset.storage_bucket, primaryAsset.storage_path)}
+                  alt="Primary key visual"
+                  className="h-48 w-full object-cover"
+                />
+              </div>
+            </div>
+          ) : null}
+          {keyVisuals.length > 0 ? (
+            <div className="space-y-2">
+              <p className="font-medium">Key visual gallery</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {keyVisuals.map((asset) => (
+                  <div key={asset.id} className="overflow-hidden rounded-xl border border-border/60">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={getPublicStorageUrl(asset.storage_bucket, asset.storage_path)}
+                      alt="Key visual"
+                      className="h-28 w-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
           {concept.one_liner ? (
             <p className="text-muted-foreground">{concept.one_liner}</p>
           ) : null}

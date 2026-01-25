@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getLatestBrief, getOutputs, getFeedback, getReferences } from "@/lib/data";
+import { getLatestBrief, getOutputs, getFeedback, getReferences, listConceptAssetsByProject } from "@/lib/data";
 import { GENERATION_MODE_LABELS } from "@/lib/constants";
 import { OUTPUT_TEMPLATE_LIST } from "@/lib/ai/templates";
 import ExportControls from "@/components/project/export-controls";
@@ -9,12 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import type { Client, Project } from "@/lib/types";
+import { getPublicStorageUrl } from "@/lib/storage";
 
 interface ExportPageProps {
   params: Promise<{ projectId: string }>;
   searchParams?:
-    | Promise<{ refs?: string; feedback?: string; appendix?: string; provenance?: string }>
-    | { refs?: string; feedback?: string; appendix?: string; provenance?: string };
+    | Promise<{ refs?: string; feedback?: string; appendix?: string; provenance?: string; gallery?: string }>
+    | { refs?: string; feedback?: string; appendix?: string; provenance?: string; gallery?: string };
 }
 
 export default async function ExportPage({ params, searchParams }: ExportPageProps) {
@@ -24,6 +25,7 @@ export default async function ExportPage({ params, searchParams }: ExportPagePro
   const includeFeedback = resolvedSearch?.feedback !== "false";
   const includeAppendix = resolvedSearch?.appendix !== "false";
   const includeProvenance = resolvedSearch?.provenance === "true";
+  const includeGallery = resolvedSearch?.gallery === "true";
   let project: (Project & { client: Client | null }) | null = null;
   try {
     const supabase = await createClient();
@@ -42,12 +44,19 @@ export default async function ExportPage({ params, searchParams }: ExportPagePro
     notFound();
   }
 
-  const [brief, outputs, feedback, references] = await Promise.all([
+  const [brief, outputs, feedback, references, conceptAssets] = await Promise.all([
     getLatestBrief(projectId),
     getOutputs(projectId),
     getFeedback(projectId),
     getReferences(projectId),
+    listConceptAssetsByProject(projectId),
   ]);
+
+  const primaryVisualByConcept = new Map(
+    conceptAssets
+      .filter((asset) => asset.asset_type === "key_visual" && asset.is_primary && asset.concept_id)
+      .map((asset) => [asset.concept_id as string, asset])
+  );
 
   const latestByMode = new Map<string, (typeof outputs)[number]>();
   outputs
@@ -149,6 +158,46 @@ export default async function ExportPage({ params, searchParams }: ExportPagePro
             )}
           </CardContent>
         </Card>
+
+        {primaryVisualByConcept.size > 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Primary key visuals</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 md:grid-cols-2">
+              {Array.from(primaryVisualByConcept.values()).map((asset) => (
+                <div key={asset.id} className="overflow-hidden rounded-xl border border-border/60">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={getPublicStorageUrl(asset.storage_bucket, asset.storage_path)}
+                    alt="Primary key visual"
+                    className="h-40 w-full object-cover"
+                  />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {includeGallery && conceptAssets.length > 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Image gallery</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 md:grid-cols-2">
+              {conceptAssets.map((asset) => (
+                <div key={asset.id} className="overflow-hidden rounded-xl border border-border/60">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={getPublicStorageUrl(asset.storage_bucket, asset.storage_path)}
+                    alt="Generated visual"
+                    className="h-40 w-full object-cover"
+                  />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ) : null}
 
         {appendixOutputs.length > 0 ? (
           <Card>

@@ -21,6 +21,7 @@ import type {
   Client,
   Concept,
   ConceptVariant,
+  ConceptAsset,
   CreativeSpec,
   Feedback,
   Output,
@@ -108,6 +109,7 @@ export default function ProjectWorkspace({
   feedback,
   references,
   concepts,
+  assetsByConcept,
   variantsByConcept,
   scripts,
   storyboardsByScript,
@@ -123,6 +125,7 @@ export default function ProjectWorkspace({
   feedback: Feedback[];
   references: Reference[];
   concepts: Concept[];
+  assetsByConcept: Record<string, ConceptAsset[]>;
   variantsByConcept: Record<string, ConceptVariant[]>;
   scripts: Script[];
   storyboardsByScript: Record<string, Storyboard | null>;
@@ -493,7 +496,9 @@ export default function ProjectWorkspace({
               projectId={project.id}
               concepts={concepts}
               variantsByConcept={variantsByConcept}
+              assetsByConcept={assetsByConcept}
               aiEnabled={aiEnabled}
+              imageModel={aiSettings.image_model ?? null}
             />
           ) : null}
 

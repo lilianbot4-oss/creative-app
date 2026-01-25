@@ -11,8 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import InfoTooltip from "@/components/ui/info-tooltip";
 import { createConceptAction } from "@/app/(protected)/app/actions";
-import type { Concept, ConceptVariant } from "@/lib/types";
+import type { Concept, ConceptAsset, ConceptVariant } from "@/lib/types";
 import ConceptDetail from "@/components/project/concept-detail";
+import KeyVisualGenerator from "@/components/project/key-visual-generator";
+import { getPublicStorageUrl } from "@/lib/storage";
 
 const ORIGIN_LABELS: Record<string, string> = {
   human: "Human",
@@ -24,12 +26,16 @@ export default function ConceptsPanel({
   projectId,
   concepts,
   variantsByConcept,
+  assetsByConcept,
   aiEnabled,
+  imageModel,
 }: {
   projectId: string;
   concepts: Concept[];
   variantsByConcept: Record<string, ConceptVariant[]>;
+  assetsByConcept: Record<string, ConceptAsset[]>;
   aiEnabled: boolean;
+  imageModel: string | null;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -361,6 +367,12 @@ export default function ConceptsPanel({
           {sortedConcepts.map((concept) => {
             const variants = variantsByConcept[concept.id] ?? [];
             const origin = concept.origin_type ?? "human";
+            const assets = assetsByConcept[concept.id] ?? [];
+            const primaryAsset = assets.find(
+              (asset) => asset.is_primary && asset.asset_type === "key_visual"
+            );
+            const primaryUrl =
+              primaryAsset ? getPublicStorageUrl(primaryAsset.storage_bucket, primaryAsset.storage_path) : "";
             return (
               <Card key={concept.id}>
                 <CardHeader>
@@ -381,6 +393,32 @@ export default function ConceptsPanel({
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
+                  <div className="space-y-2 rounded-xl border border-border/60 bg-muted/20 p-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">Key visual</p>
+                      {primaryAsset ? <Badge variant="secondary">Primary</Badge> : null}
+                    </div>
+                    {primaryUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={primaryUrl}
+                        alt="Primary key visual"
+                        className="h-40 w-full rounded-lg object-cover"
+                      />
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        No primary visual yet.
+                      </p>
+                    )}
+                    <KeyVisualGenerator
+                      projectId={projectId}
+                      concept={concept}
+                      assets={assets}
+                      aiEnabled={aiEnabled}
+                      imageModel={imageModel}
+                      onRefresh={router.refresh}
+                    />
+                  </div>
                   {concept.share_triggers?.length ? (
                     <div>
                       <p className="font-medium">Why it spreads</p>
@@ -404,7 +442,7 @@ export default function ConceptsPanel({
                     </div>
                   ) : null}
                   <div className="flex flex-wrap gap-2">
-                    <ConceptDetail concept={concept} variants={variants} />
+                    <ConceptDetail concept={concept} variants={variants} assets={assets} />
                     <Button size="sm" variant="secondary" onClick={() => handleGenerateVariants(concept.id)}>
                       Generate variants
                     </Button>
