@@ -139,22 +139,30 @@ export default function StoryboardPanel({
               <CardTitle>Frames</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2">
-              {selectedStoryboard.frames.map((frame) => (
-                <div
-                  key={frame.frame}
-                  className="rounded-xl border border-border/60 bg-background/70 p-3 text-sm"
-                >
-                  <p className="font-medium">Frame {frame.frame}</p>
-                  <p className="text-xs text-muted-foreground">{frame.shot}</p>
-                  <p>{frame.setting}</p>
-                  <p className="text-muted-foreground">{frame.action}</p>
-                  {frame.os_text ? <p className="text-xs">OS: {frame.os_text}</p> : null}
-                  {frame.audio ? <p className="text-xs">Audio: {frame.audio}</p> : null}
-                  {frame.props?.length ? (
-                    <p className="text-xs">Props: {frame.props.join(", ")}</p>
-                  ) : null}
-                </div>
-              ))}
+              {selectedStoryboard.frames.map((frame) => {
+                const propsList = Array.isArray(frame.props)
+                  ? frame.props
+                  : frame.props
+                    ? [String(frame.props)]
+                    : [];
+
+                return (
+                  <div
+                    key={frame.frame}
+                    className="rounded-xl border border-border/60 bg-background/70 p-3 text-sm"
+                  >
+                    <p className="font-medium">Frame {frame.frame}</p>
+                    <p className="text-xs text-muted-foreground">{frame.shot}</p>
+                    <p>{frame.setting}</p>
+                    <p className="text-muted-foreground">{frame.action}</p>
+                    {frame.os_text ? <p className="text-xs">OS: {frame.os_text}</p> : null}
+                    {frame.audio ? <p className="text-xs">Audio: {frame.audio}</p> : null}
+                    {propsList.length ? (
+                      <p className="text-xs">Props: {propsList.join(", ")}</p>
+                    ) : null}
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
 

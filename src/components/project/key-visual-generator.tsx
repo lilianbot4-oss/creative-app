@@ -94,6 +94,14 @@ export default function KeyVisualGenerator({
         return;
       }
       const created = (data.assets ?? []) as ConceptAsset[];
+      const errors = (data.errors ?? []) as Array<{ index: number; error: string }>;
+      if (errors.length > 0) {
+        toast.error(errors[0]?.error || "Some images failed to generate");
+      }
+      if (created.length === 0) {
+        toast.error("No images were created. Check storage bucket and policies.");
+        return;
+      }
       setPendingAssets(created);
       toast.success("Key visuals generated");
       onRefresh();

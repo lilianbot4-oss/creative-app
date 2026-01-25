@@ -27,6 +27,33 @@ async function bufferFromImage(item: { b64_json?: string | null; url?: string | 
   return null;
 }
 
+async function generateOneImage(options: {
+  model: string;
+  prompt: string;
+  size: "1024x1024" | "1536x1024" | "1024x1536";
+}) {
+  try {
+    return await openai.images.generate({
+      model: options.model,
+      prompt: options.prompt,
+      n: 1,
+      size: options.size,
+      response_format: "b64_json",
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("response_format")) {
+      return await openai.images.generate({
+        model: options.model,
+        prompt: options.prompt,
+        n: 1,
+        size: options.size,
+      });
+    }
+    throw error;
+  }
+}
+
 export async function POST(request: Request) {
   try {
     if (!process.env.OPENAI_API_KEY) {
@@ -77,24 +104,31 @@ export async function POST(request: Request) {
       );
     }
 
-    const completion = await openai.images.generate({
-      model: settings.image_model,
-      prompt: style ? `${prompt}\nStyle: ${style}` : prompt,
-      n,
-      size,
-      response_format: "b64_json",
-    });
-
-    const images = completion.data ?? [];
-    if (images.length === 0) {
-      return NextResponse.json({ error: "No images returned" }, { status: 500 });
-    }
-
     const createdReferences = [] as Array<{ id: string; storage_path: string; url: string }>;
+    const errors: Array<{ index: number; error: string }> = [];
 
-    for (let i = 0; i < images.length; i += 1) {
-      const buffer = await bufferFromImage(images[i]);
-      if (!buffer) continue;
+    const requestCount = Math.min(n, 4);
+
+    for (let i = 0; i < requestCount; i += 1) {
+      let buffer: Buffer | null = null;
+      try {
+        const completion = await generateOneImage({
+          model: settings.image_model,
+          prompt: style ? `${prompt}\nStyle: ${style}` : prompt,
+          size,
+        });
+        const image = completion.data?.[0];
+        buffer = image ? await bufferFromImage(image) : null;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Image generation failed";
+        errors.push({ index: i, error: message });
+        continue;
+      }
+
+      if (!buffer) {
+        errors.push({ index: i, error: "No image returned" });
+        continue;
+      }
 
       const path = `${user.id}/${projectId}/generated/${Date.now()}-${i}.png`;
       const { error: uploadError } = await supabase.storage
@@ -102,7 +136,8 @@ export async function POST(request: Request) {
         .upload(path, buffer, { contentType: "image/png", upsert: true });
 
       if (uploadError) {
-        return NextResponse.json({ error: "Failed to upload image" }, { status: 500 });
+        errors.push({ index: i, error: "Failed to upload image" });
+        continue;
       }
 
       const { data: reference, error } = await supabase
@@ -118,14 +153,22 @@ export async function POST(request: Request) {
         .maybeSingle();
 
       if (error || !reference) {
-        return NextResponse.json({ error: "Failed to save reference" }, { status: 500 });
+        errors.push({ index: i, error: "Failed to save reference" });
+        continue;
       }
 
       const publicUrl = supabase.storage.from("references").getPublicUrl(path).data.publicUrl;
       createdReferences.push({ id: reference.id, storage_path: path, url: publicUrl });
     }
 
-    return NextResponse.json({ references: createdReferences });
+    if (createdReferences.length === 0) {
+      return NextResponse.json(
+        { error: errors[0]?.error ?? "No images returned", errors },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ references: createdReferences, errors });
   } catch (error) {
     console.error("Image generation failed", error);
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
