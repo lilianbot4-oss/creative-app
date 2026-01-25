@@ -25,7 +25,7 @@ export async function createClientAction(input: {
   } = await supabase.auth.getUser();
   if (userError || !user) throw new Error("Not authenticated");
 
-  const { data: client, error } = await supabase
+  const { data: client, error: insertError } = await supabase
     .from("clients")
     .insert({
       user_id: user.id,
@@ -36,7 +36,8 @@ export async function createClientAction(input: {
     .select()
     .maybeSingle();
 
-  if (error || !client) throw error;
+  if (insertError) throw insertError;
+  if (!client) throw new Error("Failed to create client");
   revalidatePath("/app");
   revalidatePath("/app/clients");
   return client;
@@ -104,7 +105,7 @@ export async function createProjectAction(input: {
   } = await supabase.auth.getUser();
   if (userError || !user) throw new Error("Not authenticated");
 
-  const { data: project, error } = await supabase
+  const { data: project, error: insertError } = await supabase
     .from("projects")
     .insert({
       user_id: user.id,
@@ -115,7 +116,8 @@ export async function createProjectAction(input: {
     .select()
     .maybeSingle();
 
-  if (error || !project) throw error;
+  if (insertError) throw insertError;
+  if (!project) throw new Error("Failed to create project");
   revalidatePath("/app");
   revalidatePath("/app/projects");
   return project;
@@ -155,7 +157,7 @@ export async function createBriefAction(input: {
   } = await supabase.auth.getUser();
   if (userError || !user) throw new Error("Not authenticated");
 
-  const { data: brief, error } = await supabase
+  const { data: brief, error: insertError } = await supabase
     .from("briefs")
     .insert({
       user_id: user.id,
@@ -165,7 +167,8 @@ export async function createBriefAction(input: {
     .select()
     .maybeSingle();
 
-  if (error || !brief) throw error;
+  if (insertError) throw insertError;
+  if (!brief) throw new Error("Failed to create brief");
   revalidatePath(`/app/projects/${data.project_id}`);
   return brief;
 }

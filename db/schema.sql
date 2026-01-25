@@ -168,6 +168,8 @@ create policy "Users can delete own references" on storage.objects
   for delete using (bucket_id = 'references' and owner = auth.uid());
 
 -- PHASE 1+ UPDATES
+-- Run the statements below in the Supabase SQL Editor to apply the latest schema updates.
+-- All statements are intended to be safe to run on an existing database (idempotent).
 alter table public.outputs add column if not exists is_primary boolean default false;
 
 alter table public.outputs drop constraint if exists outputs_mode_check;
