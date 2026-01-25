@@ -21,7 +21,7 @@ export default async function DashboardPage() {
         <div>
           <h2 className="text-2xl font-semibold">Dashboard</h2>
           <p className="text-sm text-muted-foreground">
-            Quick access to your latest projects and client workspaces.
+            Jump back into recent projects or create something new.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

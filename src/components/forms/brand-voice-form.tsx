@@ -57,11 +57,11 @@ export default function BrandVoiceForm({
         <Textarea id="audience" rows={2} {...form.register("audience")} />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="do">Do</Label>
+        <Label htmlFor="do">Voice Guidelines: Do</Label>
         <Textarea id="do" rows={2} {...form.register("do")} />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="dont">Don&apos;t</Label>
+        <Label htmlFor="dont">Voice Guidelines: Avoid</Label>
         <Textarea id="dont" rows={2} {...form.register("dont")} />
       </div>
       <div className="space-y-2">

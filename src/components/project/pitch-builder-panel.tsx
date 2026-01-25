@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import InfoTooltip from "@/components/ui/info-tooltip";
 import type { Concept, ConceptVariant, CreativeSpec, Feedback, Reference, Script, Storyboard } from "@/lib/types";
 
 const PIPELINE_STEPS = [
@@ -205,7 +206,8 @@ export default function PitchBuilderPanel({
                     checked={includeAppendix}
                     onChange={(event) => setIncludeAppendix(event.target.checked)}
                   />
-                  Include appendix outputs
+                  Include supporting materials
+                  <InfoTooltip label="Additional outputs like alternate scripts, variant concepts, and production notes." />
                 </label>
                 <label className="flex items-center gap-2">
                   <input
@@ -229,7 +231,7 @@ export default function PitchBuilderPanel({
                     checked={includeProvenance}
                     onChange={(event) => setIncludeProvenance(event.target.checked)}
                   />
-                  Include provenance (internal)
+                  Include AI generation history (internal)
                 </label>
                 <label className="flex items-center gap-2">
                   <input

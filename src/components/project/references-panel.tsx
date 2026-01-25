@@ -189,7 +189,7 @@ export default function ReferencesPanel({
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
-            <Label>Generate moodboard images</Label>
+            <Label>AI Moodboard — Generate visual inspiration</Label>
             <Textarea
               rows={3}
               placeholder="Describe the visual direction you want to explore..."
@@ -213,7 +213,7 @@ export default function ReferencesPanel({
           </div>
           <form className="space-y-3" onSubmit={urlForm.handleSubmit(handleAddUrl)}>
             <div className="space-y-2">
-              <Label>Reference URL</Label>
+              <Label>External Reference — Add links to existing inspiration</Label>
               <Input placeholder="https://" {...urlForm.register("url")} />
             </div>
             <div className="space-y-2">

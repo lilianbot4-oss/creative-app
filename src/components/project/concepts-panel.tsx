@@ -243,12 +243,12 @@ export default function ConceptsPanel({
           <Dialog open={assistOpen} onOpenChange={setAssistOpen}>
             <DialogTrigger asChild>
               <Button variant="secondary" disabled={!aiEnabled || generating}>
-                Expand my seed (AI assisted)
+                Develop my idea with AI
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Expand my seed</DialogTitle>
+                <DialogTitle>Develop My Idea</DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
                 <div className="space-y-2">
@@ -388,7 +388,10 @@ export default function ConceptsPanel({
                         <Badge variant="secondary">{ORIGIN_LABELS[origin]}</Badge>
                         <InfoTooltip label="Provenance: how this concept was created." />
                       </div>
-                      <Badge variant="outline">{variants.length} variants</Badge>
+                      <div className="flex items-center gap-1">
+                                      <Badge variant="outline">{variants.length} variants</Badge>
+                                      <InfoTooltip label="Variants are different angles or takes on the same core concept." />
+                                    </div>
                     </div>
                   </div>
                 </CardHeader>

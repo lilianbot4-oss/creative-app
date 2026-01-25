@@ -118,7 +118,7 @@ export default function StoryboardPanel({
               onChange={(event) => setWithImages(event.target.checked)}
               disabled={!imageModel}
             />
-            Generate storyboard images (optional)
+            Include AI-generated frame visuals (optional)
           </label>
           {!imageModel ? (
             <p className="text-xs text-muted-foreground">

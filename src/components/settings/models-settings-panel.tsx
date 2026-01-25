@@ -78,7 +78,8 @@ export default function ModelsSettingsPanel({
 
       <Card>
         <CardHeader>
-          <CardTitle>Reasoning / quality</CardTitle>
+          <CardTitle>Speed vs Quality</CardTitle>
+          <p className="text-sm text-muted-foreground">Choose faster responses or higher quality outputs</p>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           {REASONING_OPTIONS.map((option) => (

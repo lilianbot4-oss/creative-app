@@ -542,14 +542,14 @@ export default function ProjectWorkspace({
               <Card>
                 <CardHeader>
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <CardTitle>Legacy outputs generator</CardTitle>
+                    <CardTitle>Campaign Outputs</CardTitle>
                     {!aiEnabled ? <Badge variant="destructive">AI Disabled</Badge> : null}
                   </div>
                 </CardHeader>
                 <CardContent>
                   {!brief ? (
                     <p className="text-sm text-muted-foreground">
-                      Add a brief before generating legacy campaign outputs.
+                      Add a brief before generating campaign outputs.
                     </p>
                   ) : (
                     <form
@@ -647,7 +647,7 @@ export default function ProjectWorkspace({
                   onSubmit={feedbackForm.handleSubmit(handleFeedbackSubmit)}
                 >
                   <div className="space-y-2">
-                    <Label>Attach to output (optional)</Label>
+                    <Label>Link to specific content (optional)</Label>
                     <Select
                       value={feedbackForm.watch("outputId")}
                       onValueChange={(value) =>

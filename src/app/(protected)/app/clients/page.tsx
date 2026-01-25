@@ -26,7 +26,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
         <div>
           <h2 className="text-2xl font-semibold">Clients</h2>
           <p className="text-sm text-muted-foreground">
-            Manage client profiles and brand voice guidance.
+            Set up client brands and voice guidelines for consistent outputs.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

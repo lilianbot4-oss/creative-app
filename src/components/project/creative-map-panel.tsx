@@ -312,7 +312,7 @@ export default function CreativeMapPanel({
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <CardTitle>Brief uploads (no storage)</CardTitle>
+              <CardTitle>Upload Brief (files processed, not stored)</CardTitle>
               <InfoTooltip label="Files are parsed in your browser. Only extracted text is saved to the database." />
             </div>
             {!aiEnabled ? <Badge variant="secondary">AI Disabled</Badge> : null}
@@ -436,7 +436,7 @@ export default function CreativeMapPanel({
               onClick={handleParse}
               disabled={parsing || !aiEnabled}
             >
-              {parsing ? "Parsing..." : "Parse brief into creative map"}
+              {parsing ? "Analyzing..." : "Extract key details from brief"}
             </Button>
             <Button
               type="button"

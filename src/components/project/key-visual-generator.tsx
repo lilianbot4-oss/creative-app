@@ -50,6 +50,13 @@ export default function KeyVisualGenerator({
 
   const primaryAsset = assets.find((asset) => asset.is_primary && asset.asset_type === "key_visual");
   const gallery = assets.filter((asset) => asset.asset_type === "key_visual");
+  const mergedGallery = useMemo(() => {
+    const map = new Map<string, ConceptAsset>();
+    [...pendingAssets, ...gallery].forEach((asset) => {
+      map.set(asset.id, asset);
+    });
+    return Array.from(map.values());
+  }, [pendingAssets, gallery]);
 
   const handleGenerate = async () => {
     if (!aiEnabled) {
@@ -264,7 +271,7 @@ export default function KeyVisualGenerator({
             </div>
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
-              {[...pendingAssets, ...gallery].map((asset) => renderThumb(asset))}
+              {mergedGallery.map((asset) => renderThumb(asset))}
             </div>
           )}
         </div>

@@ -349,7 +349,10 @@ export default function ScriptsPanel({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Rewrite goal</Label>
+              <div className="flex items-center gap-1">
+                <Label>Rewrite goal</Label>
+                <InfoTooltip label="Choose how the AI should adjust the script: clearer simplifies language, bolder adds impact, cheaper reduces production costs, etc." />
+              </div>
               <Select value={rewriteGoal} onValueChange={setRewriteGoal}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select goal" />
