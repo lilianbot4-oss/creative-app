@@ -12,7 +12,9 @@ import type { Client, Project } from "@/lib/types";
 
 interface ExportPageProps {
   params: Promise<{ projectId: string }>;
-  searchParams?: Promise<{ refs?: string; feedback?: string; appendix?: string }> | { refs?: string; feedback?: string; appendix?: string };
+  searchParams?:
+    | Promise<{ refs?: string; feedback?: string; appendix?: string; provenance?: string }>
+    | { refs?: string; feedback?: string; appendix?: string; provenance?: string };
 }
 
 export default async function ExportPage({ params, searchParams }: ExportPageProps) {
@@ -21,6 +23,7 @@ export default async function ExportPage({ params, searchParams }: ExportPagePro
   const includeReferences = resolvedSearch?.refs !== "false";
   const includeFeedback = resolvedSearch?.feedback !== "false";
   const includeAppendix = resolvedSearch?.appendix !== "false";
+  const includeProvenance = resolvedSearch?.provenance === "true";
   let project: (Project & { client: Client | null }) | null = null;
   try {
     const supabase = await createClient();
@@ -136,6 +139,9 @@ export default async function ExportPage({ params, searchParams }: ExportPagePro
                 <h3 className="text-lg font-semibold">
                   {GENERATION_MODE_LABELS[primaryOutput.mode]} (v{primaryOutput.version})
                 </h3>
+                {includeProvenance ? (
+                  <p className="text-xs text-muted-foreground">Provenance: legacy output (origin unknown)</p>
+                ) : null}
                 <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
                   <MarkdownContent content={primaryOutput.content_md} />
                 </div>
@@ -155,6 +161,9 @@ export default async function ExportPage({ params, searchParams }: ExportPagePro
                   <h3 className="text-lg font-semibold">
                     {GENERATION_MODE_LABELS[output.mode]} (v{output.version})
                   </h3>
+                  {includeProvenance ? (
+                    <p className="text-xs text-muted-foreground">Provenance: legacy output (origin unknown)</p>
+                  ) : null}
                   <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
                     <MarkdownContent content={output.content_md} />
                   </div>

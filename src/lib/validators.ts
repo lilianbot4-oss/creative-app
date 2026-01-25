@@ -80,7 +80,7 @@ export const creativeSpecSchema = z.object({
 
 export const parseCreativeSpecSchema = z.object({
   projectId: z.string().uuid(),
-  rawText: z.string().min(1),
+  rawText: z.string().optional().nullable(),
 });
 
 export const conceptSchema = z.object({
@@ -88,8 +88,10 @@ export const conceptSchema = z.object({
   title: z.string().min(1, "Concept title is required"),
   one_liner: z.string().optional().nullable(),
   thesis: z.string().optional().nullable(),
-  doorDash_integration: z.string().optional().nullable(),
+  doordash_integration: z.string().optional().nullable(),
   scalability: z.string().optional().nullable(),
+  origin_type: z.enum(["human", "ai_assisted", "ai_generated"]).optional(),
+  seed_text: z.string().optional().nullable(),
 });
 
 export const conceptVariantSchema = z.object({
@@ -100,6 +102,8 @@ export const conceptVariantSchema = z.object({
 
 export const generateConceptsSchema = z.object({
   projectId: z.string().uuid(),
+  seedText: z.string().optional().nullable(),
+  count: z.number().int().min(1).max(10).optional(),
 });
 
 export const generateVariantsSchema = z.object({

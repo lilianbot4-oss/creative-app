@@ -25,12 +25,18 @@ type UrlFormValues = z.infer<typeof urlSchema>;
 export default function ReferencesPanel({
   projectId,
   references,
+  aiEnabled,
+  imageModel,
 }: {
   projectId: string;
   references: Reference[];
+  aiEnabled: boolean;
+  imageModel: string | null;
 }) {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [prompt, setPrompt] = useState("");
   const urlForm = useForm<UrlFormValues>({
     resolver: zodResolver(urlSchema),
     defaultValues: {
@@ -118,6 +124,62 @@ export default function ReferencesPanel({
   };
 
   const supabase = createClient();
+  const imageEnabled = Boolean(imageModel) && aiEnabled;
+
+  const handleGenerateMoodboard = async () => {
+    if (!aiEnabled) {
+      toast.error("AI disabled: add OPENAI_API_KEY to .env.local and restart.");
+      return;
+    }
+    if (!imageModel) {
+      toast.error("Image model not configured. Choose one in AI Models settings.");
+      return;
+    }
+    if (!prompt.trim()) {
+      toast.error("Add a prompt to generate images.");
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      const response = await fetch("/api/ai/generate-images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId,
+          prompt: prompt.trim(),
+          n: 4,
+          size: "1024x1024",
+          style: "moodboard",
+        }),
+      });
+      const data = await response.json();
+      if (response.status === 400 && data?.error === "Missing OPENAI_API_KEY") {
+        toast.error("AI disabled: add OPENAI_API_KEY to .env.local and restart.");
+        return;
+      }
+      if (response.status === 400 && data?.error === "Image model not configured") {
+        toast.error("Image model not configured. Choose one in AI Models settings.");
+        return;
+      }
+      if (response.status === 429) {
+        toast.error(data?.error || "Daily AI limit reached. Try again tomorrow.");
+        return;
+      }
+      if (!response.ok) {
+        toast.error(data?.error || "Failed to generate images");
+        return;
+      }
+
+      toast.success("Images generated");
+      setPrompt("");
+      router.refresh();
+    } catch {
+      toast.error("Failed to generate images");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -126,7 +188,29 @@ export default function ReferencesPanel({
           <CardTitle>Add references</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* TODO: Add moodboard image generation when image API is available. */}
+          <div className="space-y-2">
+            <Label>Generate moodboard images</Label>
+            <Textarea
+              rows={3}
+              placeholder="Describe the visual direction you want to explore..."
+              value={prompt}
+              onChange={(event) => setPrompt(event.target.value)}
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                onClick={handleGenerateMoodboard}
+                disabled={!imageEnabled || generating}
+              >
+                {generating ? "Generating..." : "Generate 4 images"}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                {imageEnabled
+                  ? `Using ${imageModel}.`
+                  : "Image model not configured in AI Models settings."}
+              </p>
+            </div>
+          </div>
           <form className="space-y-3" onSubmit={urlForm.handleSubmit(handleAddUrl)}>
             <div className="space-y-2">
               <Label>Reference URL</Label>

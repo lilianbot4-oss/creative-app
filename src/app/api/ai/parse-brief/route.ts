@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { openai, OPENAI_MODEL } from "@/lib/openai/client";
+import { openai } from "@/lib/openai/client";
 import { buildBriefParsingPrompt } from "@/lib/openai/prompt";
 import { extractJson } from "@/lib/openai/utils";
 import { parseBriefSchema } from "@/lib/validators";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
+import { getResolvedAISettings } from "@/lib/ai/settings";
+import { DEFAULT_TEXT_MODEL } from "@/lib/ai/models";
 
 export async function POST(request: Request) {
   try {
@@ -34,7 +36,7 @@ export async function POST(request: Request) {
 
     const { data: brief, error: briefError } = await supabase
       .from("briefs")
-      .select("id")
+      .select("id, project_id")
       .eq("id", parsed.data.briefId)
       .eq("user_id", user.id)
       .maybeSingle();
@@ -60,8 +62,10 @@ export async function POST(request: Request) {
       );
     }
 
+    const settings = await getResolvedAISettings(brief.project_id);
+
     const completion = await openai.chat.completions.create({
-      model: OPENAI_MODEL,
+      model: settings.text_model ?? DEFAULT_TEXT_MODEL,
       temperature: 0.2,
       messages: [
         { role: "system", content: systemPrompt },

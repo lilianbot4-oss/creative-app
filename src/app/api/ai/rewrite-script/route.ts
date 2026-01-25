@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { openai, OPENAI_MODEL } from "@/lib/openai/client";
+import { openai } from "@/lib/openai/client";
 import { rewriteScriptSchema } from "@/lib/validators";
 import { buildRewriteScriptPrompt } from "@/lib/ai/prompts/rewriteScript";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
+import { getResolvedAISettings } from "@/lib/ai/settings";
+import { DEFAULT_TEXT_MODEL } from "@/lib/ai/models";
 
 export async function POST(request: Request) {
   try {
@@ -63,6 +65,8 @@ export async function POST(request: Request) {
       rewriteGoal: parsed.data.rewriteGoal ?? null,
     });
 
+    const settings = await getResolvedAISettings(parsed.data.projectId);
+
     const usage = await enforceUsageLimit(
       supabase,
       user.id,
@@ -77,7 +81,7 @@ export async function POST(request: Request) {
     }
 
     const completion = await openai.chat.completions.create({
-      model: OPENAI_MODEL,
+      model: settings.text_model ?? DEFAULT_TEXT_MODEL,
       temperature: 0.7,
       messages: [
         { role: "system", content: systemPrompt },
@@ -116,6 +120,8 @@ export async function POST(request: Request) {
         meta: script.meta ?? null,
         version: nextVersion,
         is_primary: false,
+        origin_type: script.origin_type ?? "ai_assisted",
+        seed_text: script.seed_text ?? null,
       })
       .select()
       .maybeSingle();

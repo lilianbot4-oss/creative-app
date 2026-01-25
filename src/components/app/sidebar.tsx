@@ -7,6 +7,8 @@ const navItems = [
   { href: "/app", label: "Dashboard" },
   { href: "/app/clients", label: "Clients" },
   { href: "/app/projects", label: "Projects" },
+  { href: "/app/settings/models", label: "AI Models" },
+  { href: "/app/help", label: "Help" },
 ];
 
 export default function Sidebar({ userEmail }: { userEmail?: string | null }) {

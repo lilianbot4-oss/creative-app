@@ -1,15 +1,22 @@
 import type { CreativeSpec } from "@/lib/types";
 import { buildGuardrails } from "@/lib/ai/guardrails";
 
-export function buildGenerateConceptsPrompt(spec: CreativeSpec) {
+export function buildGenerateConceptsPrompt(
+  spec: CreativeSpec,
+  options?: { seedText?: string | null; count?: number }
+) {
   const guardrails = buildGuardrails(spec);
   const systemPrompt =
     "You are a senior creative director. Generate viral-ready campaign concepts that fit the brief.";
 
+  const count = options?.count ?? 6;
+  const seedText = options?.seedText?.trim();
+
   const userPrompt = [
-    "Generate 6 distinct campaign concepts.",
+    `Generate ${count} distinct campaign concept${count === 1 ? "" : "s"}.`,
+    seedText ? `Seed idea to expand: ${seedText}` : null,
     "Return a JSON array. Each object must include:",
-    "title, one_liner, thesis, share_triggers (array of strings), doorDash_integration (string), cast_archetypes (array of strings), beats (array), risks (array of {risk, mitigation}), scalability (string).",
+    "title, one_liner, thesis, share_triggers (array of strings), doordash_integration (string), cast_archetypes (array of strings), beats (array), risks (array of {risk, mitigation}), scalability (string).",
     guardrails ? "Constraints:" : null,
     guardrails,
     spec.raw_brief_text ? "Brief:" : null,

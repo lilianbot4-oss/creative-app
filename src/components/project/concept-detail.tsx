@@ -3,7 +3,14 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import type { Concept, ConceptVariant } from "@/lib/types";
+
+const ORIGIN_LABELS: Record<string, string> = {
+  human: "Human",
+  ai_assisted: "AI Assisted",
+  ai_generated: "AI Generated",
+};
 
 export default function ConceptDetail({
   concept,
@@ -26,6 +33,12 @@ export default function ConceptDetail({
           <DialogTitle>{concept.title}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 text-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">{ORIGIN_LABELS[concept.origin_type ?? "human"]}</Badge>
+            {concept.seed_text ? (
+              <span className="text-xs text-muted-foreground">Seed: {concept.seed_text}</span>
+            ) : null}
+          </div>
           {concept.one_liner ? (
             <p className="text-muted-foreground">{concept.one_liner}</p>
           ) : null}

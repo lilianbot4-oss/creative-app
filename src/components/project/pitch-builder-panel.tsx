@@ -42,11 +42,12 @@ export default function PitchBuilderPanel({
   const [selectedConcepts, setSelectedConcepts] = useState<string[]>(
     concepts.slice(0, 3).map((concept) => concept.id)
   );
-  const [selectedVariantId, setSelectedVariantId] = useState("");
+  const [selectedVariantId, setSelectedVariantId] = useState("none");
   const [includeConstraints, setIncludeConstraints] = useState(true);
   const [includeAppendix, setIncludeAppendix] = useState(true);
   const [includeReferences, setIncludeReferences] = useState(true);
   const [includeFeedback, setIncludeFeedback] = useState(false);
+  const [includeProvenance, setIncludeProvenance] = useState(false);
   const [runningStep, setRunningStep] = useState<string | null>(null);
 
   const storyboardCount = useMemo(
@@ -65,11 +66,12 @@ export default function PitchBuilderPanel({
     if (!includeAppendix) params.set("appendix", "false");
     if (!includeReferences) params.set("refs", "false");
     if (includeFeedback) params.set("feedback", "true");
+    if (includeProvenance) params.set("provenance", "true");
     if (selectedConcepts.length) params.set("concepts", selectedConcepts.join(","));
-    if (selectedVariantId) params.set("variant", selectedVariantId);
+    if (selectedVariantId !== "none") params.set("variant", selectedVariantId);
     const query = params.toString();
     return `/app/projects/${projectId}/pitch${query ? `?${query}` : ""}`;
-  }, [projectId, includeConstraints, includeAppendix, includeReferences, includeFeedback, selectedConcepts, selectedVariantId]);
+  }, [projectId, includeConstraints, includeAppendix, includeReferences, includeFeedback, includeProvenance, selectedConcepts, selectedVariantId]);
 
   const toggleConcept = (conceptId: string) => {
     setSelectedConcepts((prev) => {
@@ -119,7 +121,7 @@ export default function PitchBuilderPanel({
       const variantsJson = await variantsRes.json();
       if (!variantsRes.ok) throw new Error(variantsJson?.error || "Failed to generate variants");
       const variants = variantsJson.variants as ConceptVariant[];
-      const firstVariantId = variants?.[0]?.id ?? "";
+      const firstVariantId = variants?.[0]?.id ?? "none";
       setSelectedVariantId(firstVariantId);
 
       setRunningStep("script");
@@ -129,7 +131,7 @@ export default function PitchBuilderPanel({
         body: JSON.stringify({
           projectId,
           conceptId: topConcepts[0],
-          variantId: firstVariantId || null,
+          variantId: firstVariantId === "none" ? null : firstVariantId,
           format: "launch_30",
         }),
       });
@@ -219,6 +221,14 @@ export default function PitchBuilderPanel({
                   />
                   Include feedback ({feedback.length})
                 </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={includeProvenance}
+                    onChange={(event) => setIncludeProvenance(event.target.checked)}
+                  />
+                  Include provenance (internal)
+                </label>
               </div>
             </div>
           </div>
@@ -261,7 +271,7 @@ export default function PitchBuilderPanel({
                 <SelectValue placeholder="Select variant" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {selectedVariants.map((variant) => (
                   <SelectItem key={variant.id} value={variant.id}>
                     {variant.angle}

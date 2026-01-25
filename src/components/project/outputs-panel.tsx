@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import InfoTooltip from "@/components/ui/info-tooltip";
 import { Button } from "@/components/ui/button";
 import MarkdownViewer from "@/components/markdown/markdown-viewer";
 import { OUTPUT_TEMPLATE_LIST } from "@/lib/ai/templates";
@@ -72,7 +73,10 @@ export default function OutputsPanel({
               </div>
               <div className="flex items-center gap-2">
                 {primaryOutput?.id === latest.id ? (
-                  <Badge variant="secondary">Primary</Badge>
+                  <div className="flex items-center gap-1">
+                    <Badge variant="secondary">Primary</Badge>
+                    <InfoTooltip label="Primary outputs are used in exports by default." />
+                  </div>
                 ) : primaryOutput ? (
                   <Badge variant="outline">Primary v{primaryOutput.version}</Badge>
                 ) : (

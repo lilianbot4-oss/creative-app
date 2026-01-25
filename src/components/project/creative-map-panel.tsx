@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { createBriefAction, upsertCreativeSpecAction } from "@/app/(protected)/app/actions";
-import type { Brief, CreativeSpec } from "@/lib/types";
+import InfoTooltip from "@/components/ui/info-tooltip";
+import { createBriefAction, saveBriefUploadAction, setActiveBriefUploadAction, upsertCreativeSpecAction } from "@/app/(protected)/app/actions";
+import type { Brief, CreativeSpec, ProjectBriefUpload } from "@/lib/types";
 import { useRouter } from "next/navigation";
+import { extractTextFromPdf, extractTextFromPptx } from "@/lib/briefParsing/clientExtract";
 
 const sampleBrief =
   "Launch a social-first delivery campaign for Valentine’s Day. Objective: make DoorDash feel like the ultimate romantic wingman. Must avoid cheesy clichés. Deliverables: TikTok series, influencer briefs, OOH teaser, in-app promo.";
@@ -42,11 +44,13 @@ export default function CreativeMapPanel({
   projectId,
   brief,
   creativeSpec,
+  briefUploads,
   aiEnabled,
 }: {
   projectId: string;
   brief: Brief | null;
   creativeSpec: CreativeSpec | null;
+  briefUploads: ProjectBriefUpload[];
   aiEnabled: boolean;
 }) {
   const router = useRouter();
@@ -80,6 +84,16 @@ export default function CreativeMapPanel({
   );
   const [saving, setSaving] = useState(false);
   const [parsing, setParsing] = useState(false);
+  const [parsedFrom, setParsedFrom] = useState<string | null>(null);
+  const [activeUploadId, setActiveUploadId] = useState<string | null>(
+    creativeSpec?.active_brief_upload_id ?? null
+  );
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [extracting, setExtracting] = useState(false);
+  const [uploadText, setUploadText] = useState("");
+  const [uploadMeta, setUploadMeta] = useState<Record<string, unknown> | null>(null);
+  const [savingUpload, setSavingUpload] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (creativeSpec) {
@@ -100,6 +114,7 @@ export default function CreativeMapPanel({
       setSuggestedArchetypes(
         formatLines(updatedJson.suggested_archetypes as string[] | undefined)
       );
+      setActiveUploadId(creativeSpec.active_brief_upload_id ?? null);
     }
   }, [creativeSpec]);
 
@@ -116,6 +131,73 @@ export default function CreativeMapPanel({
       content_system_notes: contentSystemNotes,
     };
   }, [objective, audience, keyMessage, toneTags, mustDo, mustAvoid, deliverablesText, suggestedArchetypes, contentSystemNotes]);
+
+  const handleFileSelected = async (file: File) => {
+    const name = file.name.toLowerCase();
+    const isPdf = name.endsWith(".pdf");
+    const isPptx = name.endsWith(".pptx");
+    if (!isPdf && !isPptx) {
+      toast.error("Upload a PDF or PPTX file.");
+      return;
+    }
+
+    setExtracting(true);
+    setUploadFile(file);
+    try {
+      const result = isPdf ? await extractTextFromPdf(file) : await extractTextFromPptx(file);
+      setUploadText(result.text);
+      setUploadMeta(result.meta ?? null);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to extract text from file");
+    } finally {
+      setExtracting(false);
+    }
+  };
+
+  const handleSaveUpload = async () => {
+    if (!uploadFile || !uploadText.trim()) {
+      toast.error("Extracted text is required.");
+      return;
+    }
+    setSavingUpload(true);
+    try {
+      const fileType = uploadFile.name.toLowerCase().endsWith(".pptx") ? "pptx" : "pdf";
+      await saveBriefUploadAction({
+        projectId,
+        filename: uploadFile.name,
+        fileType,
+        fileSize: uploadFile.size,
+        extractedText: uploadText.trim(),
+        extractedMeta: uploadMeta ?? null,
+      });
+      toast.success("Brief uploaded (text only)");
+      setUploadFile(null);
+      setUploadText("");
+      setUploadMeta(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to save brief upload");
+    } finally {
+      setSavingUpload(false);
+    }
+  };
+
+  const handleUseUpload = async (uploadId: string | null) => {
+    try {
+      await setActiveBriefUploadAction({ projectId, uploadId });
+      setActiveUploadId(uploadId);
+      toast.success(uploadId ? "Active brief updated" : "Using pasted brief");
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to update active brief");
+    }
+  };
 
   const handleSave = async () => {
     if (!rawBriefText.trim()) {
@@ -136,7 +218,7 @@ export default function CreativeMapPanel({
         audience: audience.trim() || null,
       });
 
-      if (rawBriefText.trim() !== (brief?.raw_text ?? "").trim()) {
+      if (rawBriefText.trim() && rawBriefText.trim() !== (brief?.raw_text ?? "").trim()) {
         await createBriefAction({
           project_id: projectId,
           raw_text: rawBriefText.trim(),
@@ -158,11 +240,10 @@ export default function CreativeMapPanel({
       toast.error("AI disabled: add OPENAI_API_KEY to .env.local and restart.");
       return;
     }
-    if (!rawBriefText.trim()) {
+    if (!rawBriefText.trim() && !activeUploadId) {
       toast.error("Add a brief before parsing.");
       return;
     }
-
     setParsing(true);
     try {
       const response = await fetch("/api/ai/parse-creative-spec", {
@@ -170,7 +251,7 @@ export default function CreativeMapPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           projectId,
-          rawText: rawBriefText.trim(),
+          rawText: rawBriefText.trim() || null,
         }),
       });
 
@@ -189,6 +270,7 @@ export default function CreativeMapPanel({
       }
 
       const spec = data.creative_spec as CreativeSpec;
+      setParsedFrom(data?.parsed_from ?? null);
       if (spec) {
         setMustDo(formatLines(spec.must_do));
         setMustAvoid(formatLines(spec.must_avoid));
@@ -205,7 +287,7 @@ export default function CreativeMapPanel({
       }
 
       toast.success("Creative map updated");
-      if (rawBriefText.trim() !== (brief?.raw_text ?? "").trim()) {
+      if (rawBriefText.trim() && rawBriefText.trim() !== (brief?.raw_text ?? "").trim()) {
         await createBriefAction({
           project_id: projectId,
           raw_text: rawBriefText.trim(),
@@ -221,10 +303,120 @@ export default function CreativeMapPanel({
 
   return (
     <div className="space-y-6">
+      <div className="rounded-2xl border border-border/60 bg-muted/40 p-4 text-sm">
+        <p className="font-medium">Recommended next step</p>
+        <p className="text-muted-foreground">Parse the Creative Map to unlock concept and script generation.</p>
+      </div>
+
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle>Raw brief</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle>Brief uploads (no storage)</CardTitle>
+              <InfoTooltip label="Files are parsed in your browser. Only extracted text is saved to the database." />
+            </div>
+            {!aiEnabled ? <Badge variant="secondary">AI Disabled</Badge> : null}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.pptx"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) handleFileSelected(file);
+              }}
+            />
+            {uploadFile ? (
+              <div className="text-xs text-muted-foreground">
+                Selected: {uploadFile.name} ({Math.round(uploadFile.size / 1024)} KB)
+              </div>
+            ) : null}
+          </div>
+
+          {extracting ? (
+            <p className="text-sm text-muted-foreground">Extracting text...</p>
+          ) : null}
+
+          {uploadText ? (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Extracted text (editable)</label>
+              <Textarea
+                rows={6}
+                value={uploadText}
+                onChange={(event) => setUploadText(event.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Preview saved text only. Files are never stored.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={handleSaveUpload} disabled={savingUpload}>
+                  {savingUpload ? "Saving..." : "Save extracted text"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    setUploadFile(null);
+                    setUploadText("");
+                    setUploadMeta(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
+                >
+                  Clear
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Upload history</p>
+            {briefUploads.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No uploads yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {briefUploads.map((upload) => {
+                  const wordCount = upload.extracted_text.trim().split(/\s+/).filter(Boolean).length;
+                  const isActive = activeUploadId === upload.id;
+                  return (
+                    <div
+                      key={upload.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/70 p-3 text-sm"
+                    >
+                      <div>
+                        <p className="font-medium">{upload.filename}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(upload.created_at).toLocaleString()} · {wordCount} words
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isActive ? <Badge variant="secondary">Active</Badge> : null}
+                        <Button size="sm" variant="secondary" onClick={() => handleUseUpload(upload.id)}>
+                          Use as current
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+                {activeUploadId ? (
+                  <Button size="sm" variant="ghost" onClick={() => handleUseUpload(null)}>
+                    Use pasted brief instead
+                  </Button>
+                ) : null}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <CardTitle>Raw brief</CardTitle>
+              <InfoTooltip label="Paste or edit a raw brief here. This is separate from uploaded files." />
+            </div>
             {!aiEnabled ? <Badge variant="destructive">AI Disabled</Badge> : null}
           </div>
         </CardHeader>
@@ -254,6 +446,11 @@ export default function CreativeMapPanel({
               Use sample brief
             </Button>
           </div>
+          {parsedFrom ? (
+            <p className="text-xs text-muted-foreground">
+              Parsed from: {parsedFrom}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
 

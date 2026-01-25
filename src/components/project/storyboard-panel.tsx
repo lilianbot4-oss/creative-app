@@ -15,11 +15,13 @@ export default function StoryboardPanel({
   scripts,
   storyboardsByScript,
   aiEnabled,
+  imageModel,
 }: {
   projectId: string;
   scripts: Script[];
   storyboardsByScript: Record<string, Storyboard | null>;
   aiEnabled: boolean;
+  imageModel: string | null;
 }) {
   const router = useRouter();
   const defaultScriptId = useMemo(() => {
@@ -28,6 +30,7 @@ export default function StoryboardPanel({
   }, [scripts]);
 
   const [selectedScriptId, setSelectedScriptId] = useState(defaultScriptId);
+  const [withImages, setWithImages] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const sortedScripts = useMemo(
@@ -83,6 +86,11 @@ export default function StoryboardPanel({
 
   return (
     <div className="space-y-4">
+      <div className="rounded-2xl border border-border/60 bg-muted/40 p-4 text-sm">
+        <p className="font-medium">Recommended next step</p>
+        <p className="text-muted-foreground">Export a client-ready pitch pack once the storyboard is ready.</p>
+      </div>
+
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -103,9 +111,24 @@ export default function StoryboardPanel({
               ))}
             </SelectContent>
           </Select>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={withImages}
+              onChange={(event) => setWithImages(event.target.checked)}
+              disabled={!imageModel}
+            />
+            Generate storyboard images (optional)
+          </label>
+          {!imageModel ? (
+            <p className="text-xs text-muted-foreground">
+              Image model not configured. Set one in AI Models.
+            </p>
+          ) : null}
           <Button onClick={handleGenerate} disabled={!aiEnabled || isGenerating}>
             {isGenerating ? "Generating..." : "Generate storyboard"}
           </Button>
+          {/* TODO: If withImages is true, trigger image generation per frame after storyboard is created. */}
         </CardContent>
       </Card>
 

@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { openai, OPENAI_MODEL } from "@/lib/openai/client";
+import { openai } from "@/lib/openai/client";
 import { generateScriptSchema } from "@/lib/validators";
 import { buildGenerateScriptPrompt } from "@/lib/ai/prompts/generateScript";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
+import { getResolvedAISettings } from "@/lib/ai/settings";
+import { DEFAULT_TEXT_MODEL } from "@/lib/ai/models";
 
 export async function POST(request: Request) {
   try {
@@ -84,6 +86,8 @@ export async function POST(request: Request) {
       variant: variant ?? null,
     });
 
+    const settings = await getResolvedAISettings(parsed.data.projectId);
+
     const usage = await enforceUsageLimit(
       supabase,
       user.id,
@@ -98,7 +102,7 @@ export async function POST(request: Request) {
     }
 
     const completion = await openai.chat.completions.create({
-      model: OPENAI_MODEL,
+      model: settings.text_model ?? DEFAULT_TEXT_MODEL,
       temperature: 0.7,
       messages: [
         { role: "system", content: systemPrompt },
@@ -134,6 +138,13 @@ export async function POST(request: Request) {
 
     const shouldBePrimary = (primaryCount ?? 0) === 0;
 
+    const derivedOrigin =
+      concept?.origin_type === "ai_generated"
+        ? "ai_generated"
+        : concept?.origin_type === "human" || concept?.origin_type === "ai_assisted"
+          ? "ai_assisted"
+          : "ai_generated";
+
     const { data: script, error } = await supabase
       .from("scripts")
       .insert({
@@ -146,6 +157,8 @@ export async function POST(request: Request) {
         meta: null,
         version: nextVersion,
         is_primary: shouldBePrimary,
+        origin_type: derivedOrigin,
+        seed_text: concept?.seed_text ?? null,
       })
       .select()
       .maybeSingle();

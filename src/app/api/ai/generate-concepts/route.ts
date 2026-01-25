@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { openai, OPENAI_MODEL } from "@/lib/openai/client";
+import { openai } from "@/lib/openai/client";
 import { extractJson } from "@/lib/openai/utils";
 import { generateConceptsSchema } from "@/lib/validators";
 import { buildGenerateConceptsPrompt } from "@/lib/ai/prompts/generateConcepts";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
+import { getResolvedAISettings } from "@/lib/ai/settings";
+import { DEFAULT_TEXT_MODEL } from "@/lib/ai/models";
 
 export async function POST(request: Request) {
   try {
@@ -56,7 +58,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const { systemPrompt, userPrompt } = buildGenerateConceptsPrompt(spec);
+    const desiredCount = parsed.data.count ?? (parsed.data.seedText ? 1 : 6);
+    const { systemPrompt, userPrompt } = buildGenerateConceptsPrompt(spec, {
+      seedText: parsed.data.seedText ?? null,
+      count: desiredCount,
+    });
+    const settings = await getResolvedAISettings(parsed.data.projectId);
 
     const usage = await enforceUsageLimit(
       supabase,
@@ -72,7 +79,7 @@ export async function POST(request: Request) {
     }
 
     const completion = await openai.chat.completions.create({
-      model: OPENAI_MODEL,
+      model: settings.text_model ?? DEFAULT_TEXT_MODEL,
       temperature: 0.7,
       messages: [
         { role: "system", content: systemPrompt },
@@ -87,7 +94,7 @@ export async function POST(request: Request) {
         one_liner?: string;
         thesis?: string;
         share_triggers?: string[];
-        doorDash_integration?: string;
+        doordash_integration?: string;
         cast_archetypes?: string[];
         beats?: Array<Record<string, unknown>>;
         risks?: Array<{ risk: string; mitigation?: string }>;
@@ -102,7 +109,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const payload = json
+    const originType = parsed.data.seedText ? "ai_assisted" : "ai_generated";
+    const limited = json.slice(0, desiredCount);
+    const payload = limited
       .filter((item) => item.title)
       .map((item) => ({
         user_id: user.id,
@@ -111,11 +120,16 @@ export async function POST(request: Request) {
         one_liner: item.one_liner ?? null,
         thesis: item.thesis ?? null,
         share_triggers: item.share_triggers ?? null,
-        doorDash_integration: item.doorDash_integration ?? null,
+        doordash_integration:
+          item.doordash_integration ??
+          (item as { doorDash_integration?: string }).doorDash_integration ??
+          null,
         cast_archetypes: item.cast_archetypes ?? null,
         beats: item.beats ?? null,
         risks: item.risks ?? null,
         scalability: item.scalability ?? null,
+        origin_type: originType,
+        seed_text: parsed.data.seedText ?? null,
       }));
 
     if (payload.length === 0) {
@@ -131,8 +145,9 @@ export async function POST(request: Request) {
       .select();
 
     if (error || !concepts) {
+      console.error("Concept insert failed", error);
       return NextResponse.json(
-        { error: "Failed to save concepts" },
+        { error: error?.message || "Failed to save concepts" },
         { status: 500 }
       );
     }

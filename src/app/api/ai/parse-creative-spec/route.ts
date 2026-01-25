@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { openai, OPENAI_MODEL } from "@/lib/openai/client";
+import { openai } from "@/lib/openai/client";
 import { extractJson } from "@/lib/openai/utils";
 import { parseCreativeSpecSchema } from "@/lib/validators";
 import { buildParseCreativeSpecPrompt } from "@/lib/ai/prompts/parseCreativeSpec";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
+import { getResolvedAISettings } from "@/lib/ai/settings";
+import { DEFAULT_TEXT_MODEL } from "@/lib/ai/models";
 
 export async function POST(request: Request) {
   try {
@@ -43,9 +45,45 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    const { systemPrompt, userPrompt } = buildParseCreativeSpecPrompt(
-      parsed.data.rawText
-    );
+    const { data: existingSpec } = await supabase
+      .from("creative_specs")
+      .select("raw_brief_text, active_brief_upload_id")
+      .eq("project_id", parsed.data.projectId)
+      .maybeSingle();
+
+    let briefText = (parsed.data.rawText ?? "").trim();
+    let parsedFrom: string | null = null;
+
+    if (existingSpec?.active_brief_upload_id) {
+      const { data: upload } = await supabase
+        .from("project_brief_uploads")
+        .select("id, filename, extracted_text")
+        .eq("id", existingSpec.active_brief_upload_id)
+        .eq("project_id", parsed.data.projectId)
+        .maybeSingle();
+      if (upload?.extracted_text) {
+        briefText = upload.extracted_text;
+        parsedFrom = `Uploaded file (${upload.filename})`;
+      }
+    }
+
+    if (!briefText && existingSpec?.raw_brief_text) {
+      briefText = existingSpec.raw_brief_text;
+      parsedFrom = "Pasted brief";
+    }
+
+    if (briefText && !parsedFrom) {
+      parsedFrom = "Pasted brief";
+    }
+
+    if (!briefText) {
+      return NextResponse.json(
+        { error: "No brief provided yet" },
+        { status: 400 }
+      );
+    }
+
+    const { systemPrompt, userPrompt } = buildParseCreativeSpecPrompt(briefText);
 
     const usage = await enforceUsageLimit(
       supabase,
@@ -60,8 +98,10 @@ export async function POST(request: Request) {
       );
     }
 
+    const settings = await getResolvedAISettings(parsed.data.projectId);
+
     const completion = await openai.chat.completions.create({
-      model: OPENAI_MODEL,
+      model: settings.text_model ?? DEFAULT_TEXT_MODEL,
       temperature: 0.2,
       messages: [
         { role: "system", content: systemPrompt },
@@ -90,7 +130,9 @@ export async function POST(request: Request) {
         {
           user_id: user.id,
           project_id: parsed.data.projectId,
-          raw_brief_text: parsed.data.rawText,
+          raw_brief_text:
+            existingSpec?.raw_brief_text ??
+            (parsed.data.rawText ? parsed.data.rawText.trim() : ""),
           parsed_json: json,
           must_do: mustDo,
           must_avoid: mustAvoid,
@@ -111,7 +153,10 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ creative_spec: spec });
+    return NextResponse.json({
+      creative_spec: spec,
+      parsed_from: parsedFrom,
+    });
   } catch (error) {
     console.error("Creative spec parsing failed", error);
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });

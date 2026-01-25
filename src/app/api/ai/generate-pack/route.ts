@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { openai, OPENAI_MODEL } from "@/lib/openai/client";
+import { openai } from "@/lib/openai/client";
 import { buildPrompt } from "@/lib/openai/promptBuilder";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
+import { getResolvedAISettings } from "@/lib/ai/settings";
+import { DEFAULT_TEXT_MODEL } from "@/lib/ai/models";
 
 const packSchema = z.object({
   projectId: z.string().uuid(),
@@ -84,6 +86,8 @@ export async function POST(request: Request) {
         .eq("project_id", projectId)
     ).data;
 
+    const settings = await getResolvedAISettings(projectId);
+
     const { count: primaryCount } = await supabase
       .from("outputs")
       .select("id", { count: "exact", head: true })
@@ -123,7 +127,7 @@ export async function POST(request: Request) {
       }
 
       const completion = await openai.chat.completions.create({
-        model: OPENAI_MODEL,
+        model: settings.text_model ?? DEFAULT_TEXT_MODEL,
         temperature: 0.7,
         messages: [
           { role: "system", content: systemPrompt },

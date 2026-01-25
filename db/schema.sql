@@ -236,13 +236,15 @@ create table if not exists public.concepts (
   one_liner text,
   thesis text,
   share_triggers jsonb,
-  doorDash_integration text,
+  doordash_integration text,
   cast_archetypes jsonb,
   beats jsonb,
   risks jsonb,
   scalability jsonb,
   created_at timestamptz default now()
 );
+
+alter table public.concepts add column if not exists doordash_integration text;
 
 create index if not exists concepts_project_idx on public.concepts (project_id);
 
@@ -352,3 +354,127 @@ drop trigger if exists creative_specs_set_updated_at on public.creative_specs;
 create trigger creative_specs_set_updated_at
   before update on public.creative_specs
   for each row execute function public.set_creative_specs_updated_at();
+
+-- PHASE 3+ AI SETTINGS (MODEL PICKER)
+-- Run the statements below in the Supabase SQL Editor to apply the latest schema updates.
+-- All statements are intended to be safe to run on an existing database (idempotent).
+
+create table if not exists public.ai_settings (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users (id) on delete cascade not null unique,
+  text_model text not null default 'gpt-4.1-mini',
+  image_model text,
+  reasoning_mode text not null default 'balanced',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists public.project_ai_settings (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users (id) on delete cascade not null,
+  project_id uuid references public.projects (id) on delete cascade not null,
+  text_model text,
+  image_model text,
+  reasoning_mode text,
+  created_at timestamptz default now()
+);
+
+create unique index if not exists project_ai_settings_project_unique on public.project_ai_settings (project_id);
+
+alter table public.ai_settings enable row level security;
+alter table public.project_ai_settings enable row level security;
+
+drop policy if exists "AI settings are viewable by owner" on public.ai_settings;
+drop policy if exists "AI settings are insertable by owner" on public.ai_settings;
+drop policy if exists "AI settings are updatable by owner" on public.ai_settings;
+drop policy if exists "AI settings are deletable by owner" on public.ai_settings;
+
+create policy "AI settings are viewable by owner" on public.ai_settings
+  for select using (auth.uid() = user_id);
+create policy "AI settings are insertable by owner" on public.ai_settings
+  for insert with check (auth.uid() = user_id);
+create policy "AI settings are updatable by owner" on public.ai_settings
+  for update using (auth.uid() = user_id);
+create policy "AI settings are deletable by owner" on public.ai_settings
+  for delete using (auth.uid() = user_id);
+
+drop policy if exists "Project AI settings are viewable by owner" on public.project_ai_settings;
+drop policy if exists "Project AI settings are insertable by owner" on public.project_ai_settings;
+drop policy if exists "Project AI settings are updatable by owner" on public.project_ai_settings;
+drop policy if exists "Project AI settings are deletable by owner" on public.project_ai_settings;
+
+create policy "Project AI settings are viewable by owner" on public.project_ai_settings
+  for select using (auth.uid() = user_id);
+create policy "Project AI settings are insertable by owner" on public.project_ai_settings
+  for insert with check (auth.uid() = user_id);
+create policy "Project AI settings are updatable by owner" on public.project_ai_settings
+  for update using (auth.uid() = user_id);
+create policy "Project AI settings are deletable by owner" on public.project_ai_settings
+  for delete using (auth.uid() = user_id);
+
+create or replace function public.set_ai_settings_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists ai_settings_set_updated_at on public.ai_settings;
+create trigger ai_settings_set_updated_at
+  before update on public.ai_settings
+  for each row execute function public.set_ai_settings_updated_at();
+
+-- PHASE 4+ BRIEF UPLOADS + PROVENANCE
+-- Run the statements below in the Supabase SQL Editor to apply the latest schema updates.
+-- All statements are intended to be safe to run on an existing database (idempotent).
+
+create table if not exists public.project_brief_uploads (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users (id) on delete cascade not null,
+  project_id uuid references public.projects (id) on delete cascade not null,
+  filename text not null,
+  file_type text not null,
+  file_size int null,
+  extracted_text text not null,
+  extracted_meta jsonb null,
+  created_at timestamptz default now()
+);
+
+create index if not exists project_brief_uploads_project_created_idx
+  on public.project_brief_uploads (project_id, created_at desc);
+
+alter table public.project_brief_uploads enable row level security;
+
+drop policy if exists "Brief uploads are viewable by owner" on public.project_brief_uploads;
+drop policy if exists "Brief uploads are insertable by owner" on public.project_brief_uploads;
+drop policy if exists "Brief uploads are updatable by owner" on public.project_brief_uploads;
+drop policy if exists "Brief uploads are deletable by owner" on public.project_brief_uploads;
+
+create policy "Brief uploads are viewable by owner" on public.project_brief_uploads
+  for select using (auth.uid() = user_id);
+create policy "Brief uploads are insertable by owner" on public.project_brief_uploads
+  for insert with check (auth.uid() = user_id);
+create policy "Brief uploads are updatable by owner" on public.project_brief_uploads
+  for update using (auth.uid() = user_id);
+create policy "Brief uploads are deletable by owner" on public.project_brief_uploads
+  for delete using (auth.uid() = user_id);
+
+alter table public.creative_specs
+  add column if not exists active_brief_upload_id uuid null;
+
+alter table public.concepts
+  add column if not exists origin_type text not null default 'human',
+  add column if not exists ai_generation_id uuid null,
+  add column if not exists seed_text text null,
+  add column if not exists last_edited_by_user_id uuid null,
+  add column if not exists updated_at timestamptz default now();
+
+alter table public.scripts
+  add column if not exists origin_type text not null default 'human',
+  add column if not exists ai_generation_id uuid null,
+  add column if not exists seed_text text null,
+  add column if not exists updated_at timestamptz default now();
+
+create index if not exists concepts_origin_type_idx on public.concepts (origin_type);
+create index if not exists scripts_origin_type_idx on public.scripts (origin_type);

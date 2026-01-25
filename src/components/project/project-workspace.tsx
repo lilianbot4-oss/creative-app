@@ -25,10 +25,12 @@ import type {
   Feedback,
   Output,
   Project,
+  ProjectBriefUpload,
   Reference,
   Script,
   Storyboard,
 } from "@/lib/types";
+import { getImageModelInfo, getTextModelInfo } from "@/lib/ai/models";
 import ReferencesPanel from "@/components/project/references-panel";
 import OutputsPanel from "@/components/project/outputs-panel";
 import ShareProjectButton from "@/components/project/share-project-button";
@@ -39,6 +41,7 @@ import ConceptsPanel from "@/components/project/concepts-panel";
 import ScriptsPanel from "@/components/project/scripts-panel";
 import StoryboardPanel from "@/components/project/storyboard-panel";
 import PitchBuilderPanel from "@/components/project/pitch-builder-panel";
+import type { AISettings } from "@/lib/ai/settings";
 
 type IdeaFormValues = {
   mode: (typeof GENERATION_MODES)[number];
@@ -100,6 +103,7 @@ export default function ProjectWorkspace({
   client,
   brief,
   creativeSpec,
+  briefUploads,
   outputs,
   feedback,
   references,
@@ -107,12 +111,14 @@ export default function ProjectWorkspace({
   variantsByConcept,
   scripts,
   storyboardsByScript,
+  aiSettings,
   aiEnabled,
 }: {
   project: Project & { client?: Client | null };
   client: Client | null;
   brief: Brief | null;
   creativeSpec: CreativeSpec | null;
+  briefUploads: ProjectBriefUpload[];
   outputs: Output[];
   feedback: Feedback[];
   references: Reference[];
@@ -120,6 +126,7 @@ export default function ProjectWorkspace({
   variantsByConcept: Record<string, ConceptVariant[]>;
   scripts: Script[];
   storyboardsByScript: Record<string, Storyboard | null>;
+  aiSettings: AISettings;
   aiEnabled: boolean;
 }) {
   const router = useRouter();
@@ -288,6 +295,9 @@ export default function ProjectWorkspace({
     (brief?.parsed_summary as Record<string, unknown> | null);
   const creativeSummary = creativeSpec?.raw_brief_text ?? brief?.raw_text ?? "No brief yet.";
 
+  const textModelInfo = getTextModelInfo(aiSettings?.text_model);
+  const imageModelInfo = getImageModelInfo(aiSettings?.image_model);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -306,6 +316,12 @@ export default function ProjectWorkspace({
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {!aiEnabled ? <Badge variant="destructive">AI Disabled</Badge> : null}
+            <Badge variant="outline">
+              Text model: {textModelInfo?.label ?? aiSettings.text_model}
+            </Badge>
+            <Badge variant={imageModelInfo ? "secondary" : "outline"}>
+              Image: {imageModelInfo ? imageModelInfo.label : "Not configured"}
+            </Badge>
             <Select
               value={statusValue}
               onValueChange={(value) => {
@@ -467,6 +483,7 @@ export default function ProjectWorkspace({
               projectId={project.id}
               brief={brief}
               creativeSpec={creativeSpec}
+              briefUploads={briefUploads}
               aiEnabled={aiEnabled}
             />
           ) : null}
@@ -497,6 +514,7 @@ export default function ProjectWorkspace({
               scripts={scripts}
               storyboardsByScript={storyboardsByScript}
               aiEnabled={aiEnabled}
+              imageModel={aiSettings.image_model ?? null}
             />
           ) : null}
 
@@ -675,7 +693,12 @@ export default function ProjectWorkspace({
           ) : null}
 
           {section === "references" ? (
-            <ReferencesPanel projectId={project.id} references={references} />
+            <ReferencesPanel
+              projectId={project.id}
+              references={references}
+              aiEnabled={aiEnabled}
+              imageModel={aiSettings.image_model ?? null}
+            />
           ) : null}
 
           {section === "export" ? (

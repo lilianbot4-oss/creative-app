@@ -9,8 +9,10 @@ import {
   listConcepts,
   listVariants,
   listScripts,
+  listBriefUploads,
   getStoryboard,
 } from "@/lib/data";
+import { getResolvedAISettings } from "@/lib/ai/settings";
 import ProjectWorkspace from "@/components/project/project-workspace";
 import type { Client, Project, ConceptVariant, Storyboard } from "@/lib/types";
 
@@ -38,7 +40,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     notFound();
   }
 
-  const [brief, outputs, feedback, references, creativeSpec, concepts, scripts] = await Promise.all([
+  const [brief, outputs, feedback, references, creativeSpec, concepts, scripts, aiSettings, briefUploads] =
+    await Promise.all([
     getLatestBrief(projectId),
     getOutputs(projectId),
     getFeedback(projectId),
@@ -46,6 +49,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     getCreativeSpec(projectId),
     listConcepts(projectId),
     listScripts(projectId),
+    getResolvedAISettings(projectId),
+    listBriefUploads(projectId),
   ]);
 
   const variantsByConceptEntries = await Promise.all(
@@ -70,6 +75,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       client={project.client}
       brief={brief}
       creativeSpec={creativeSpec}
+      briefUploads={briefUploads}
       outputs={outputs}
       feedback={feedback}
       references={references}
@@ -77,6 +83,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       variantsByConcept={variantsByConcept}
       scripts={scripts}
       storyboardsByScript={storyboardsByScript}
+      aiSettings={aiSettings}
       aiEnabled={Boolean(process.env.OPENAI_API_KEY)}
     />
   );

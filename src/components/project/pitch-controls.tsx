@@ -13,12 +13,14 @@ export default function PitchControls() {
   const [includeAppendix, setIncludeAppendix] = useState(true);
   const [includeReferences, setIncludeReferences] = useState(true);
   const [includeFeedback, setIncludeFeedback] = useState(false);
+  const [includeProvenance, setIncludeProvenance] = useState(false);
 
   useEffect(() => {
     setIncludeConstraints(searchParams.get("constraints") !== "false");
     setIncludeAppendix(searchParams.get("appendix") !== "false");
     setIncludeReferences(searchParams.get("refs") !== "false");
     setIncludeFeedback(searchParams.get("feedback") === "true");
+    setIncludeProvenance(searchParams.get("provenance") === "true");
   }, [searchParams]);
 
   const updateParam = (key: string, value: boolean, truthyValue = "true") => {
@@ -77,6 +79,17 @@ export default function PitchControls() {
             }}
           />
           Include feedback
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={includeProvenance}
+            onChange={(event) => {
+              setIncludeProvenance(event.target.checked);
+              updateParam("provenance", event.target.checked, "true");
+            }}
+          />
+          Include provenance (internal)
         </label>
       </div>
       <div className="flex gap-2">

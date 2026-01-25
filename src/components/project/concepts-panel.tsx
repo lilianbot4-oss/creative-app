@@ -9,9 +9,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import InfoTooltip from "@/components/ui/info-tooltip";
 import { createConceptAction } from "@/app/(protected)/app/actions";
 import type { Concept, ConceptVariant } from "@/lib/types";
 import ConceptDetail from "@/components/project/concept-detail";
+
+const ORIGIN_LABELS: Record<string, string> = {
+  human: "Human",
+  ai_assisted: "AI Assisted",
+  ai_generated: "AI Generated",
+};
 
 export default function ConceptsPanel({
   projectId,
@@ -28,6 +35,7 @@ export default function ConceptsPanel({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
+  const [assistOpen, setAssistOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [title, setTitle] = useState("");
@@ -35,11 +43,28 @@ export default function ConceptsPanel({
   const [thesis, setThesis] = useState("");
   const [integration, setIntegration] = useState("");
   const [scalability, setScalability] = useState("");
+  const [seedTitle, setSeedTitle] = useState("");
+  const [seedText, setSeedText] = useState("");
+  const [originFilter, setOriginFilter] = useState<"all" | "human" | "ai_assisted" | "ai_generated">("all");
+  const [humanFirst, setHumanFirst] = useState(false);
 
-  const sortedConcepts = useMemo(
-    () => concepts.slice().sort((a, b) => (a.created_at > b.created_at ? -1 : 1)),
-    [concepts]
-  );
+  const sortedConcepts = useMemo(() => {
+    let list = concepts.slice();
+    if (originFilter !== "all") {
+      list = list.filter((concept) => (concept.origin_type ?? "human") === originFilter);
+    }
+    list.sort((a, b) => (a.created_at > b.created_at ? -1 : 1));
+    if (humanFirst) {
+      const weight = (origin?: string) =>
+        origin === "human" ? 0 : origin === "ai_assisted" ? 1 : 2;
+      list.sort((a, b) => {
+        const weightDiff = weight(a.origin_type) - weight(b.origin_type);
+        if (weightDiff !== 0) return weightDiff;
+        return a.created_at > b.created_at ? -1 : 1;
+      });
+    }
+    return list;
+  }, [concepts, originFilter, humanFirst]);
 
   const handleGenerate = async () => {
     if (!aiEnabled) {
@@ -75,6 +100,50 @@ export default function ConceptsPanel({
     }
   };
 
+  const handleAssist = async () => {
+    if (!aiEnabled) {
+      toast.error("AI disabled: add OPENAI_API_KEY to .env.local and restart.");
+      return;
+    }
+    if (!seedText.trim()) {
+      toast.error("Seed text is required");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const combinedSeed = seedTitle.trim()
+        ? `${seedTitle.trim()}: ${seedText.trim()}`
+        : seedText.trim();
+      const response = await fetch("/api/ai/generate-concepts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId, seedText: combinedSeed, count: 1 }),
+      });
+      const data = await response.json();
+      if (response.status === 400 && data?.error === "Missing OPENAI_API_KEY") {
+        toast.error("AI disabled: add OPENAI_API_KEY to .env.local and restart.");
+        return;
+      }
+      if (response.status === 429) {
+        toast.error(data?.error || "Daily AI limit reached. Try again tomorrow.");
+        return;
+      }
+      if (!response.ok) {
+        toast.error(data?.error || "Failed to expand seed");
+        return;
+      }
+      toast.success("Concept expanded from seed");
+      setSeedText("");
+      setSeedTitle("");
+      setAssistOpen(false);
+      router.refresh();
+    } catch {
+      toast.error("Failed to expand seed");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const handleCreate = async () => {
     if (!title.trim()) {
       toast.error("Title is required");
@@ -87,8 +156,9 @@ export default function ConceptsPanel({
         title: title.trim(),
         one_liner: oneLiner.trim() || null,
         thesis: thesis.trim() || null,
-        doorDash_integration: integration.trim() || null,
+        doordash_integration: integration.trim() || null,
         scalability: scalability.trim() || null,
+        origin_type: "human",
       });
       toast.success("Concept created");
       setTitle("");
@@ -145,10 +215,18 @@ export default function ConceptsPanel({
 
   return (
     <div className="space-y-4">
+      <div className="rounded-2xl border border-border/60 bg-muted/40 p-4 text-sm">
+        <p className="font-medium">Recommended next step</p>
+        <p className="text-muted-foreground">Select a concept and generate a script in the Script Studio.</p>
+      </div>
+
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle>Concept generation</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle>Concept generation</CardTitle>
+              <InfoTooltip label="Human, AI-assisted, and AI-generated concepts stay labeled for provenance." />
+            </div>
             {!aiEnabled ? <Badge variant="destructive">AI Disabled</Badge> : null}
           </div>
         </CardHeader>
@@ -156,9 +234,43 @@ export default function ConceptsPanel({
           <Button onClick={handleGenerate} disabled={!aiEnabled || generating}>
             {generating ? "Generating..." : "Generate 6 Concepts"}
           </Button>
+          <Dialog open={assistOpen} onOpenChange={setAssistOpen}>
+            <DialogTrigger asChild>
+              <Button variant="secondary" disabled={!aiEnabled || generating}>
+                Expand my seed (AI assisted)
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Expand my seed</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Seed title (optional)</label>
+                  <Input value={seedTitle} onChange={(event) => setSeedTitle(event.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Seed text</label>
+                  <Textarea
+                    rows={4}
+                    value={seedText}
+                    onChange={(event) => setSeedText(event.target.value)}
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" onClick={() => setAssistOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleAssist} disabled={generating}>
+                    {generating ? "Generating..." : "Generate concept"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button variant="secondary">New concept</Button>
+              <Button variant="secondary">New concept (human)</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -212,6 +324,34 @@ export default function ConceptsPanel({
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center gap-3 text-sm">
+          <div className="flex flex-wrap gap-2">
+            {(["all", "human", "ai_assisted", "ai_generated"] as const).map((value) => (
+              <Button
+                key={value}
+                size="sm"
+                variant={originFilter === value ? "default" : "secondary"}
+                onClick={() => setOriginFilter(value)}
+              >
+                {value === "all" ? "All" : ORIGIN_LABELS[value]}
+              </Button>
+            ))}
+          </div>
+          <label className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={humanFirst}
+              onChange={(event) => setHumanFirst(event.target.checked)}
+            />
+            Human-first sorting
+          </label>
+        </CardContent>
+      </Card>
+
       {sortedConcepts.length === 0 ? (
         <div className="rounded-2xl border border-border/60 bg-background/70 p-6 text-sm text-muted-foreground">
           No concepts yet. Generate or create your first concept to begin exploration.
@@ -220,6 +360,7 @@ export default function ConceptsPanel({
         <div className="grid gap-4 md:grid-cols-2">
           {sortedConcepts.map((concept) => {
             const variants = variantsByConcept[concept.id] ?? [];
+            const origin = concept.origin_type ?? "human";
             return (
               <Card key={concept.id}>
                 <CardHeader>
@@ -230,7 +371,13 @@ export default function ConceptsPanel({
                         <p className="text-sm text-muted-foreground">{concept.one_liner}</p>
                       ) : null}
                     </div>
-                    <Badge variant="outline">{variants.length} variants</Badge>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        <Badge variant="secondary">{ORIGIN_LABELS[origin]}</Badge>
+                        <InfoTooltip label="Provenance: how this concept was created." />
+                      </div>
+                      <Badge variant="outline">{variants.length} variants</Badge>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
@@ -244,10 +391,10 @@ export default function ConceptsPanel({
                       </ul>
                     </div>
                   ) : null}
-                  {concept.doorDash_integration ? (
+                  {concept.doordash_integration ? (
                     <div>
                       <p className="font-medium">Product integration</p>
-                      <p className="text-muted-foreground">{concept.doorDash_integration}</p>
+                      <p className="text-muted-foreground">{concept.doordash_integration}</p>
                     </div>
                   ) : null}
                   {concept.scalability ? (

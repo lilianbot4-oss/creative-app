@@ -14,6 +14,7 @@ import {
   projectSchema,
 } from "@/lib/validators";
 import { PROJECT_STATUSES, SCRIPT_FORMATS } from "@/lib/constants";
+import type { ScriptFormat } from "@/lib/constants";
 
 export async function createClientAction(input: {
   name: string;
@@ -311,6 +312,7 @@ export async function upsertCreativeSpecAction(input: {
   deliverables?: Array<{ type: string; notes?: string | null }> | null;
   keyMessage?: string | null;
   audience?: string | null;
+  activeBriefUploadId?: string | null;
 }) {
   const parsed = creativeSpecSchema.parse({
     project_id: input.projectId,
@@ -331,21 +333,26 @@ export async function upsertCreativeSpecAction(input: {
   } = await supabase.auth.getUser();
   if (userError || !user) throw new Error("Not authenticated");
 
+  const payload: Record<string, unknown> = {
+    user_id: user.id,
+    project_id: parsed.project_id,
+    raw_brief_text: parsed.raw_brief_text,
+    parsed_json: parsed.parsed_json ?? null,
+    must_do: parsed.must_do ?? null,
+    must_avoid: parsed.must_avoid ?? null,
+    tone_tags: parsed.tone_tags ?? null,
+    deliverables: parsed.deliverables ?? null,
+    key_message: parsed.key_message ?? null,
+    audience: parsed.audience ?? null,
+  };
+  if (input.activeBriefUploadId !== undefined) {
+    payload.active_brief_upload_id = input.activeBriefUploadId;
+  }
+
   const { data: spec, error } = await supabase
     .from("creative_specs")
     .upsert(
-      {
-        user_id: user.id,
-        project_id: parsed.project_id,
-        raw_brief_text: parsed.raw_brief_text,
-        parsed_json: parsed.parsed_json ?? null,
-        must_do: parsed.must_do ?? null,
-        must_avoid: parsed.must_avoid ?? null,
-        tone_tags: parsed.tone_tags ?? null,
-        deliverables: parsed.deliverables ?? null,
-        key_message: parsed.key_message ?? null,
-        audience: parsed.audience ?? null,
-      },
+      payload,
       { onConflict: "project_id" }
     )
     .select()
@@ -362,8 +369,10 @@ export async function createConceptAction(input: {
   title: string;
   one_liner?: string | null;
   thesis?: string | null;
-  doorDash_integration?: string | null;
+  doordash_integration?: string | null;
   scalability?: string | null;
+  origin_type?: "human" | "ai_assisted" | "ai_generated";
+  seed_text?: string | null;
 }) {
   const parsed = conceptSchema.parse(input);
   const supabase = await createClient();
@@ -381,8 +390,10 @@ export async function createConceptAction(input: {
       title: parsed.title,
       one_liner: parsed.one_liner ?? null,
       thesis: parsed.thesis ?? null,
-      doorDash_integration: parsed.doorDash_integration ?? null,
+      doordash_integration: parsed.doordash_integration ?? null,
       scalability: parsed.scalability ?? null,
+      origin_type: parsed.origin_type ?? "human",
+      seed_text: parsed.seed_text ?? null,
     })
     .select()
     .maybeSingle();
@@ -391,6 +402,122 @@ export async function createConceptAction(input: {
   if (!concept) throw new Error("Failed to create concept");
   revalidatePath(`/app/projects/${parsed.project_id}`);
   return concept;
+}
+
+export async function saveBriefUploadAction(input: {
+  projectId: string;
+  filename: string;
+  fileType: "pdf" | "pptx";
+  fileSize?: number | null;
+  extractedText: string;
+  extractedMeta?: Record<string, unknown> | null;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
+
+  const { data: upload, error } = await supabase
+    .from("project_brief_uploads")
+    .insert({
+      user_id: user.id,
+      project_id: input.projectId,
+      filename: input.filename,
+      file_type: input.fileType,
+      file_size: input.fileSize ?? null,
+      extracted_text: input.extractedText,
+      extracted_meta: input.extractedMeta ?? null,
+    })
+    .select()
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!upload) throw new Error("Failed to save brief upload");
+  revalidatePath(`/app/projects/${input.projectId}`);
+  return upload;
+}
+
+export async function setActiveBriefUploadAction(input: {
+  projectId: string;
+  uploadId: string | null;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
+
+  const { data: existing } = await supabase
+    .from("creative_specs")
+    .select("id")
+    .eq("project_id", input.projectId)
+    .maybeSingle();
+
+  const { error } = existing
+    ? await supabase
+        .from("creative_specs")
+        .update({ active_brief_upload_id: input.uploadId })
+        .eq("project_id", input.projectId)
+    : await supabase
+        .from("creative_specs")
+        .insert({
+          user_id: user.id,
+          project_id: input.projectId,
+          raw_brief_text: "",
+          active_brief_upload_id: input.uploadId,
+        });
+
+  if (error) throw error;
+  revalidatePath(`/app/projects/${input.projectId}`);
+}
+
+export async function createScriptAction(input: {
+  projectId: string;
+  format: ScriptFormat;
+  scriptMd: string;
+  conceptId?: string | null;
+  variantId?: string | null;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
+
+  const { data: existing } = await supabase
+    .from("scripts")
+    .select("version")
+    .eq("project_id", input.projectId)
+    .eq("format", input.format)
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const nextVersion = (existing?.version ?? 0) + 1;
+
+  const { data: script, error } = await supabase
+    .from("scripts")
+    .insert({
+      user_id: user.id,
+      project_id: input.projectId,
+      concept_id: input.conceptId ?? null,
+      variant_id: input.variantId ?? null,
+      format: input.format,
+      script_md: input.scriptMd,
+      version: nextVersion,
+      origin_type: "human",
+    })
+    .select()
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!script) throw new Error("Failed to create script");
+  revalidatePath(`/app/projects/${input.projectId}`);
+  return script;
 }
 
 export async function createConceptVariantAction(input: {

@@ -85,6 +85,7 @@ export type CreativeSpec = {
   user_id: string;
   project_id: string;
   raw_brief_text: string;
+  active_brief_upload_id?: string | null;
   parsed_json: Record<string, unknown> | null;
   must_do: string[] | null;
   must_avoid: string[] | null;
@@ -104,11 +105,16 @@ export type Concept = {
   one_liner: string | null;
   thesis: string | null;
   share_triggers: string[] | null;
-  doorDash_integration: string | null;
+  doordash_integration: string | null;
   cast_archetypes: string[] | null;
   beats: Array<Record<string, unknown>> | null;
   risks: Array<{ risk: string; mitigation?: string | null }> | null;
   scalability: string | null;
+  origin_type?: "human" | "ai_assisted" | "ai_generated";
+  ai_generation_id?: string | null;
+  seed_text?: string | null;
+  last_edited_by_user_id?: string | null;
+  updated_at?: string;
   created_at: string;
 };
 
@@ -133,6 +139,22 @@ export type Script = {
   meta: Record<string, unknown> | null;
   version: number;
   is_primary: boolean;
+  origin_type?: "human" | "ai_assisted" | "ai_generated";
+  ai_generation_id?: string | null;
+  seed_text?: string | null;
+  updated_at?: string;
+  created_at: string;
+};
+
+export type ProjectBriefUpload = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  filename: string;
+  file_type: "pdf" | "pptx" | string;
+  file_size: number | null;
+  extracted_text: string;
+  extracted_meta: Record<string, unknown> | null;
   created_at: string;
 };
 

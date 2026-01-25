@@ -55,6 +55,7 @@ If you log in and see an empty dashboard, use **Create demo data** to seed a sam
 6. Use the Idea Composer to generate outputs.
 7. Review outputs, add feedback, and regenerate.
 8. Upload references and export a PDF report.
+9. Configure AI models in **AI Models** settings for text/image generation.
 
 ## Manual QA checklist
 1. Log in.

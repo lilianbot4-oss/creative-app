@@ -23,6 +23,7 @@ interface PitchPageProps {
     appendix?: string;
     refs?: string;
     feedback?: string;
+    provenance?: string;
     concepts?: string;
     variant?: string;
   }> | {
@@ -30,6 +31,7 @@ interface PitchPageProps {
     appendix?: string;
     refs?: string;
     feedback?: string;
+    provenance?: string;
     concepts?: string;
     variant?: string;
   };
@@ -42,6 +44,7 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
   const includeAppendix = resolvedSearch?.appendix !== "false";
   const includeReferences = resolvedSearch?.refs !== "false";
   const includeFeedback = resolvedSearch?.feedback === "true";
+  const includeProvenance = resolvedSearch?.provenance === "true";
   const conceptIds = resolvedSearch?.concepts
     ? resolvedSearch.concepts.split(",").filter(Boolean)
     : [];
@@ -214,6 +217,11 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
               selectedConcepts.map((concept) => (
                 <div key={concept.id} className="rounded-xl border border-border/60 p-4 text-sm">
                   <p className="text-base font-semibold">{concept.title}</p>
+                  {includeProvenance ? (
+                    <p className="text-xs text-muted-foreground">
+                      Provenance: {concept.origin_type ?? "human"}
+                    </p>
+                  ) : null}
                   {concept.one_liner ? (
                     <p className="text-muted-foreground">{concept.one_liner}</p>
                   ) : null}
@@ -259,6 +267,11 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
                 <h3 className="text-lg font-semibold">
                   {SCRIPT_FORMAT_LABELS[primaryScript.format]} (v{primaryScript.version})
                 </h3>
+                {includeProvenance ? (
+                  <p className="text-xs text-muted-foreground">
+                    Provenance: {primaryScript.origin_type ?? "human"}
+                  </p>
+                ) : null}
                 <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
                   <MarkdownContent content={primaryScript.script_md} />
                 </div>

@@ -8,10 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import InfoTooltip from "@/components/ui/info-tooltip";
 import { SCRIPT_FORMATS, SCRIPT_FORMAT_LABELS } from "@/lib/constants";
 import type { Concept, ConceptVariant, Feedback, Script } from "@/lib/types";
 import ScriptEditor from "@/components/project/script-editor";
-import { setPrimaryScriptAction } from "@/app/(protected)/app/actions";
+import { createScriptAction, setPrimaryScriptAction } from "@/app/(protected)/app/actions";
 
 const REWRITE_GOALS = [
   "clearer",
@@ -21,6 +24,12 @@ const REWRITE_GOALS = [
   "more Gen Z",
   "safer for brand",
 ];
+
+const ORIGIN_LABELS: Record<string, string> = {
+  human: "Human",
+  ai_assisted: "AI Assisted",
+  ai_generated: "AI Generated",
+};
 
 export default function ScriptsPanel({
   projectId,
@@ -39,14 +48,18 @@ export default function ScriptsPanel({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialConceptId = searchParams.get("conceptId") ?? "";
-  const [conceptId, setConceptId] = useState(initialConceptId);
-  const [variantId, setVariantId] = useState("");
+  const initialConceptId = searchParams.get("conceptId") ?? "none";
+  const [conceptId, setConceptId] = useState(initialConceptId || "none");
+  const [variantId, setVariantId] = useState("none");
   const [format, setFormat] = useState<(typeof SCRIPT_FORMATS)[number]>(
     "launch_30"
   );
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRewriting, setIsRewriting] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualSaving, setManualSaving] = useState(false);
+  const [manualText, setManualText] = useState("");
+  const [manualFormat, setManualFormat] = useState<(typeof SCRIPT_FORMATS)[number]>("launch_30");
   const [selectedScriptId, setSelectedScriptId] = useState("");
   const [rewriteGoal, setRewriteGoal] = useState(REWRITE_GOALS[0]);
   const [selectedFeedback, setSelectedFeedback] = useState<string[]>([]);
@@ -72,7 +85,7 @@ export default function ScriptsPanel({
     }
   }, [scripts, selectedScriptId]);
 
-  const variants = conceptId ? variantsByConcept[conceptId] ?? [] : [];
+  const variants = conceptId !== "none" ? variantsByConcept[conceptId] ?? [] : [];
 
   const handleGenerate = async () => {
     if (!aiEnabled) {
@@ -86,8 +99,8 @@ export default function ScriptsPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           projectId,
-          conceptId: conceptId || null,
-          variantId: variantId || null,
+          conceptId: conceptId === "none" ? null : conceptId,
+          variantId: variantId === "none" ? null : variantId,
           format,
         }),
       });
@@ -110,6 +123,31 @@ export default function ScriptsPanel({
       toast.error("Failed to generate script");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleManualCreate = async () => {
+    if (!manualText.trim()) {
+      toast.error("Script content is required");
+      return;
+    }
+    setManualSaving(true);
+    try {
+      await createScriptAction({
+        projectId,
+        format: manualFormat,
+        scriptMd: manualText.trim(),
+        conceptId: conceptId === "none" ? null : conceptId,
+        variantId: variantId === "none" ? null : variantId,
+      });
+      toast.success("Script saved");
+      setManualText("");
+      setManualOpen(false);
+      router.refresh();
+    } catch {
+      toast.error("Failed to save script");
+    } finally {
+      setManualSaving(false);
     }
   };
 
@@ -172,10 +210,18 @@ export default function ScriptsPanel({
 
   return (
     <div className="space-y-6">
+      <div className="rounded-2xl border border-border/60 bg-muted/40 p-4 text-sm">
+        <p className="font-medium">Recommended next step</p>
+        <p className="text-muted-foreground">Generate a storyboard once a script feels solid.</p>
+      </div>
+
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle>Script generator</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle>Script generator</CardTitle>
+              <InfoTooltip label="Scripts inherit provenance from the concept they were generated from." />
+            </div>
             {!aiEnabled ? <Badge variant="destructive">AI Disabled</Badge> : null}
           </div>
         </CardHeader>
@@ -188,7 +234,7 @@ export default function ScriptsPanel({
                   <SelectValue placeholder="Select concept" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+              <SelectItem value="none">None</SelectItem>
                   {concepts.map((concept) => (
                     <SelectItem key={concept.id} value={concept.id}>
                       {concept.title}
@@ -204,7 +250,7 @@ export default function ScriptsPanel({
                   <SelectValue placeholder="Select variant" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+              <SelectItem value="none">None</SelectItem>
                   {variants.map((variant) => (
                     <SelectItem key={variant.id} value={variant.id}>
                       {variant.angle}
@@ -229,9 +275,55 @@ export default function ScriptsPanel({
               </Select>
             </div>
           </div>
-          <Button onClick={handleGenerate} disabled={!aiEnabled || isGenerating}>
-            {isGenerating ? "Generating..." : "Generate script"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={handleGenerate} disabled={!aiEnabled || isGenerating}>
+              {isGenerating ? "Generating..." : "Generate script"}
+            </Button>
+            <Dialog open={manualOpen} onOpenChange={setManualOpen}>
+              <DialogTrigger asChild>
+                <Button variant="secondary">New script (human)</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>New script (human)</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label>Format</Label>
+                    <Select value={manualFormat} onValueChange={(value) => setManualFormat(value as typeof manualFormat)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select format" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SCRIPT_FORMATS.map((item) => (
+                          <SelectItem key={item} value={item}>
+                            {SCRIPT_FORMAT_LABELS[item]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Script content</Label>
+                    <Textarea
+                      rows={8}
+                      value={manualText}
+                      onChange={(event) => setManualText(event.target.value)}
+                      placeholder="Write the script in markdown..."
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" onClick={() => setManualOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleManualCreate} disabled={manualSaving}>
+                      {manualSaving ? "Saving..." : "Save script"}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </CardContent>
       </Card>
 
@@ -324,7 +416,10 @@ export default function ScriptsPanel({
                   </div>
                   <div className="flex items-center gap-2">
                     {primaryScript?.id === latest.id ? (
-                      <Badge variant="secondary">Primary</Badge>
+                      <div className="flex items-center gap-1">
+                        <Badge variant="secondary">Primary</Badge>
+                        <InfoTooltip label="Primary scripts are used in exports and pitch packs." />
+                      </div>
                     ) : (
                       <Button size="sm" variant="secondary" onClick={() => handleSetPrimary(latest)}>
                         Set primary
@@ -332,6 +427,16 @@ export default function ScriptsPanel({
                     )}
                     <Badge variant="outline">v{latest.version}</Badge>
                   </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Badge variant="secondary">
+                      {ORIGIN_LABELS[latest.origin_type ?? "human"]}
+                    </Badge>
+                    <InfoTooltip label="Provenance: how this script was created." />
+                  </div>
+                  {latest.seed_text ? <span>Seed: {latest.seed_text}</span> : null}
                 </div>
 
                 <ScriptEditor script={latest} />
@@ -350,6 +455,15 @@ export default function ScriptsPanel({
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="py-3">
+                            <div className="flex flex-wrap items-center gap-2 pb-2 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Badge variant="secondary">
+                                  {ORIGIN_LABELS[item.origin_type ?? "human"]}
+                                </Badge>
+                                <InfoTooltip label="Provenance: how this script was created." />
+                              </div>
+                              {item.seed_text ? <span>Seed: {item.seed_text}</span> : null}
+                            </div>
                             <ScriptEditor script={item} />
                           </CardContent>
                         </Card>

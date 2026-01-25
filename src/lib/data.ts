@@ -9,6 +9,7 @@ import type {
   CreativeSpec,
   Concept,
   ConceptVariant,
+  ProjectBriefUpload,
   Script,
   Storyboard,
 } from "@/lib/types";
@@ -163,6 +164,17 @@ export async function getCreativeSpec(projectId: string) {
     .maybeSingle();
   if (error) throw error;
   return data as CreativeSpec | null;
+}
+
+export async function listBriefUploads(projectId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("project_brief_uploads")
+    .select("*")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ProjectBriefUpload[];
 }
 
 export async function upsertCreativeSpec(input: {
