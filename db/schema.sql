@@ -166,3 +166,39 @@ create policy "Users can upload references" on storage.objects
 
 create policy "Users can delete own references" on storage.objects
   for delete using (bucket_id = 'references' and owner = auth.uid());
+
+-- PHASE 1+ UPDATES
+alter table public.outputs add column if not exists is_primary boolean default false;
+
+alter table public.outputs drop constraint if exists outputs_mode_check;
+alter table public.outputs add constraint outputs_mode_check
+  check (mode in ('expand', 'alternatives', 'virality', 'pitch_outline', 'ugc_scripts', 'storyboard', 'one_pager', 'press_release', 'faq'));
+
+create unique index if not exists outputs_primary_unique on public.outputs (project_id)
+  where is_primary = true;
+
+create table if not exists public.usage (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users (id) on delete cascade not null,
+  usage_date date not null,
+  tokens_estimate int default 0,
+  requests_count int default 0,
+  created_at timestamptz default now()
+);
+
+create index if not exists usage_user_date_idx on public.usage (user_id, usage_date);
+create unique index if not exists usage_user_date_unique on public.usage (user_id, usage_date);
+
+create index if not exists clients_user_name_idx on public.clients (user_id, name);
+create index if not exists projects_user_client_status_idx on public.projects (user_id, client_id, status);
+
+alter table public.usage enable row level security;
+
+create policy "Usage is viewable by owner" on public.usage
+  for select using (auth.uid() = user_id);
+create policy "Usage is insertable by owner" on public.usage
+  for insert with check (auth.uid() = user_id);
+create policy "Usage is updatable by owner" on public.usage
+  for update using (auth.uid() = user_id);
+create policy "Usage is deletable by owner" on public.usage
+  for delete using (auth.uid() = user_id);

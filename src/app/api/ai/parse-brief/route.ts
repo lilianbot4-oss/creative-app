@@ -4,9 +4,17 @@ import { openai, OPENAI_MODEL } from "@/lib/openai/client";
 import { buildBriefParsingPrompt } from "@/lib/openai/prompt";
 import { extractJson } from "@/lib/openai/utils";
 import { parseBriefSchema } from "@/lib/validators";
+import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
 
 export async function POST(request: Request) {
   try {
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: "Missing OPENAI_API_KEY" },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
     const parsed = parseBriefSchema.safeParse(body);
     if (!parsed.success) {
@@ -38,6 +46,19 @@ export async function POST(request: Request) {
     const { systemPrompt, userPrompt } = buildBriefParsingPrompt(
       parsed.data.rawText
     );
+
+    const usage = await enforceUsageLimit(
+      supabase,
+      user.id,
+      estimateTokensFromText(systemPrompt + userPrompt)
+    );
+
+    if (!usage.allowed) {
+      return NextResponse.json(
+        { error: "Daily AI request limit reached. Try again tomorrow." },
+        { status: 429 }
+      );
+    }
 
     const completion = await openai.chat.completions.create({
       model: OPENAI_MODEL,
@@ -72,6 +93,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ parsed_summary: json });
   } catch {
+    console.error("Brief parsing failed");
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }

@@ -16,6 +16,8 @@ export const GENERATION_MODES = [
   "ugc_scripts",
   "storyboard",
   "one_pager",
+  "press_release",
+  "faq",
 ] as const;
 
 export type GenerationMode = (typeof GENERATION_MODES)[number];
@@ -28,4 +30,6 @@ export const GENERATION_MODE_LABELS: Record<GenerationMode, string> = {
   ugc_scripts: "UGC Scripts",
   storyboard: "Storyboard",
   one_pager: "One Pager",
+  press_release: "Press Release",
+  faq: "FAQ",
 };

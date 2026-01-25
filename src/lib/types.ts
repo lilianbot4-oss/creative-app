@@ -54,6 +54,7 @@ export type Output = {
   mode: GenerationMode;
   version: number;
   content_md: string;
+  is_primary: boolean;
   created_at: string;
 };
 

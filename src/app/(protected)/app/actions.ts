@@ -25,16 +25,21 @@ export async function createClientAction(input: {
   } = await supabase.auth.getUser();
   if (userError || !user) throw new Error("Not authenticated");
 
-  const { error } = await supabase.from("clients").insert({
-    user_id: user.id,
-    name: data.name,
-    industry: data.industry ?? null,
-    notes: data.notes ?? null,
-  });
+  const { data: client, error } = await supabase
+    .from("clients")
+    .insert({
+      user_id: user.id,
+      name: data.name,
+      industry: data.industry ?? null,
+      notes: data.notes ?? null,
+    })
+    .select()
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error || !client) throw error;
   revalidatePath("/app");
   revalidatePath("/app/clients");
+  return client;
 }
 
 export async function updateClientAction(input: {
@@ -99,16 +104,21 @@ export async function createProjectAction(input: {
   } = await supabase.auth.getUser();
   if (userError || !user) throw new Error("Not authenticated");
 
-  const { error } = await supabase.from("projects").insert({
-    user_id: user.id,
-    client_id: data.client_id,
-    name: data.name,
-    status: data.status,
-  });
+  const { data: project, error } = await supabase
+    .from("projects")
+    .insert({
+      user_id: user.id,
+      client_id: data.client_id,
+      name: data.name,
+      status: data.status,
+    })
+    .select()
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error || !project) throw error;
   revalidatePath("/app");
   revalidatePath("/app/projects");
+  return project;
 }
 
 export async function updateProjectStatusAction(input: {
@@ -145,14 +155,19 @@ export async function createBriefAction(input: {
   } = await supabase.auth.getUser();
   if (userError || !user) throw new Error("Not authenticated");
 
-  const { error } = await supabase.from("briefs").insert({
-    user_id: user.id,
-    project_id: data.project_id,
-    raw_text: data.raw_text,
-  });
+  const { data: brief, error } = await supabase
+    .from("briefs")
+    .insert({
+      user_id: user.id,
+      project_id: data.project_id,
+      raw_text: data.raw_text,
+    })
+    .select()
+    .maybeSingle();
 
-  if (error) throw error;
+  if (error || !brief) throw error;
   revalidatePath(`/app/projects/${data.project_id}`);
+  return brief;
 }
 
 export async function createFeedbackAction(input: {
@@ -181,6 +196,28 @@ export async function createFeedbackAction(input: {
 
   if (error) throw error;
   revalidatePath(`/app/projects/${data.project_id}`);
+}
+
+export async function setPrimaryOutputAction(input: {
+  projectId: string;
+  outputId: string;
+}) {
+  const supabase = await createClient();
+  const { error: resetError } = await supabase
+    .from("outputs")
+    .update({ is_primary: false })
+    .eq("project_id", input.projectId);
+  if (resetError) throw resetError;
+
+  const { error } = await supabase
+    .from("outputs")
+    .update({ is_primary: true })
+    .eq("id", input.outputId)
+    .eq("project_id", input.projectId);
+  if (error) throw error;
+
+  revalidatePath(`/app/projects/${input.projectId}`);
+  revalidatePath(`/app/projects/${input.projectId}/export`);
 }
 
 export async function createDemoDataAction() {
@@ -246,6 +283,7 @@ export async function createDemoDataAction() {
     version: 1,
     content_md:
       "# Campaign One-Pager\n\n## Objective\nDrive trial and repeat purchase among urban commuters.\n\n## Big Idea\nCold brew as the commute companion that turns a routine into a mini adventure.\n\n## Channels\nTransit ads, social short-form, office lobby sampling.\n\n## KPIs\nTrial redemptions, repeat purchase rate, social saves.",
+    is_primary: true,
   });
 
   await supabase.from("feedback").insert({

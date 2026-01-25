@@ -54,6 +54,8 @@ export const outputGenerateSchema = z.object({
   includeBrandVoice: z.boolean().optional().default(true),
   includeReferences: z.boolean().optional().default(true),
   regenFromFeedback: z.boolean().optional().default(false),
+  feedbackText: z.string().optional().nullable(),
+  rewriteGoal: z.string().optional().nullable(),
 });
 
 export const parseBriefSchema = z.object({

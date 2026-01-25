@@ -126,6 +126,7 @@ export default function ReferencesPanel({
           <CardTitle>Add references</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* TODO: Add moodboard image generation when image API is available. */}
           <form className="space-y-3" onSubmit={urlForm.handleSubmit(handleAddUrl)}>
             <div className="space-y-2">
               <Label>Reference URL</Label>

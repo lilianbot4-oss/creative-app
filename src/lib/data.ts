@@ -9,12 +9,16 @@ export async function getUser() {
   return user;
 }
 
-export async function getClients() {
+export async function getClients(options?: { query?: string }) {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("clients")
-    .select("*")
-    .order("created_at", { ascending: false });
+  let query = supabase.from("clients").select("*");
+  if (options?.query) {
+    const q = options.query.trim();
+    if (q.length > 0) {
+      query = query.or(`name.ilike.%${q}%,industry.ilike.%${q}%`);
+    }
+  }
+  const { data, error } = await query.order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as Client[];
 }
@@ -30,14 +34,26 @@ export async function getClient(clientId: string) {
   return data as Client | null;
 }
 
-export async function getProjects() {
+export async function getProjects(options?: { query?: string; status?: string }) {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("projects")
-    .select("*, client:clients(name)")
-    .order("created_at", { ascending: false });
+    .select("*, client:clients(name)");
+  if (options?.status && options.status !== "all") {
+    query = query.eq("status", options.status);
+  }
+  const { data, error } = await query.order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as Array<Project & { client: { name: string } | null }>;
+  const projects = (data ?? []) as Array<Project & { client: { name: string } | null }>;
+  if (options?.query) {
+    const q = options.query.toLowerCase();
+    return projects.filter(
+      (project) =>
+        project.name.toLowerCase().includes(q) ||
+        project.client?.name?.toLowerCase().includes(q)
+    );
+  }
+  return projects;
 }
 
 export async function getProjectsForClient(clientId: string) {
@@ -106,4 +122,22 @@ export async function getReferences(projectId: string) {
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as Reference[];
+}
+
+export async function getClientProjectCounts() {
+  const supabase = await createClient();
+  const { count: clientCount, error: clientError } = await supabase
+    .from("clients")
+    .select("id", { count: "exact", head: true });
+  if (clientError) throw clientError;
+
+  const { count: projectCount, error: projectError } = await supabase
+    .from("projects")
+    .select("id", { count: "exact", head: true });
+  if (projectError) throw projectError;
+
+  return {
+    clientCount: clientCount ?? 0,
+    projectCount: projectCount ?? 0,
+  };
 }

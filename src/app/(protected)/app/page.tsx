@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getClients, getProjects } from "@/lib/data";
+import { redirect } from "next/navigation";
+import { getClientProjectCounts, getClients, getProjects } from "@/lib/data";
 import CreateClientDialog from "@/components/forms/create-client-dialog";
 import CreateProjectDialog from "@/components/forms/create-project-dialog";
 import DemoDataButton from "@/components/forms/demo-data-button";
@@ -7,6 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export default async function DashboardPage() {
+  const { clientCount, projectCount } = await getClientProjectCounts();
+  if (clientCount === 0 || projectCount === 0) {
+    redirect("/app/onboarding");
+  }
   const [clients, projects] = await Promise.all([getClients(), getProjects()]);
   const recentProjects = projects.slice(0, 5);
 

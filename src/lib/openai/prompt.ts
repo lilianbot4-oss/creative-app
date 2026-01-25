@@ -95,6 +95,19 @@ const MODE_INSTRUCTIONS: Record<GenerationMode, string> = {
     "## Timeline",
     "## KPIs",
   ].join("\n"),
+  press_release: [
+    "# Press Release",
+    "## Headline",
+    "## Summary",
+    "## Key Details",
+    "## Quote",
+    "## Call to Action",
+  ].join("\n"),
+  faq: [
+    "# Campaign FAQ",
+    "## Q: ...",
+    "- A: ...",
+  ].join("\n"),
 };
 
 export function buildPrompt(options: {

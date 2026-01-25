@@ -7,13 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 interface ClientDetailPageProps {
-  params: { clientId: string };
+  params: Promise<{ clientId: string }>;
 }
 
 export default async function ClientDetailPage({ params }: ClientDetailPageProps) {
+  const { clientId } = await params;
   const [client, projects] = await Promise.all([
-    getClient(params.clientId),
-    getProjectsForClient(params.clientId),
+    getClient(clientId),
+    getProjectsForClient(clientId),
   ]);
 
   if (!client) {

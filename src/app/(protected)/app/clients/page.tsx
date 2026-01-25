@@ -1,12 +1,24 @@
 import Link from "next/link";
-import { getClients } from "@/lib/data";
+import { redirect } from "next/navigation";
+import { getClientProjectCounts, getClients } from "@/lib/data";
 import CreateClientDialog from "@/components/forms/create-client-dialog";
 import DeleteClientButton from "@/components/forms/delete-client-button";
+import ClientsFilters from "@/components/filters/clients-filters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-export default async function ClientsPage() {
-  const clients = await getClients();
+interface ClientsPageProps {
+  searchParams?: Promise<{ q?: string }> | { q?: string };
+}
+
+export default async function ClientsPage({ searchParams }: ClientsPageProps) {
+  const { clientCount, projectCount } = await getClientProjectCounts();
+  if (clientCount === 0 || projectCount === 0) {
+    redirect("/app/onboarding");
+  }
+  const resolvedParams = await Promise.resolve(searchParams);
+  const query = resolvedParams?.q ?? "";
+  const clients = await getClients({ query });
 
   return (
     <div className="space-y-6">
@@ -17,7 +29,10 @@ export default async function ClientsPage() {
             Manage client profiles and brand voice guidance.
           </p>
         </div>
-        <CreateClientDialog />
+        <div className="flex flex-wrap items-center gap-2">
+          <ClientsFilters />
+          <CreateClientDialog />
+        </div>
       </div>
 
       {clients.length === 0 ? (

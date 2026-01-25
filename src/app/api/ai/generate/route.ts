@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { openai, OPENAI_MODEL } from "@/lib/openai/client";
-import { buildPrompt } from "@/lib/openai/prompt";
+import { buildPrompt } from "@/lib/openai/promptBuilder";
 import { outputGenerateSchema } from "@/lib/validators";
+import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
 
 export async function POST(request: Request) {
   try {
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: "Missing OPENAI_API_KEY" },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
     const parsed = outputGenerateSchema.safeParse(body);
     if (!parsed.success) {
@@ -22,6 +30,8 @@ export async function POST(request: Request) {
       includeBrandVoice,
       includeReferences,
       regenFromFeedback,
+      feedbackText,
+      rewriteGoal,
     } = parsed.data;
 
     const supabase = await createClient();
@@ -92,6 +102,10 @@ export async function POST(request: Request) {
         ).data?.text ?? null
       : null;
 
+    const feedbackToUse = feedbackText?.trim().length
+      ? feedbackText.trim()
+      : latestFeedback;
+
     const { systemPrompt, userPrompt } = buildPrompt({
       mode,
       briefText: brief.raw_text,
@@ -100,8 +114,22 @@ export async function POST(request: Request) {
       ideaSeed: seedText ?? null,
       references: references ?? [],
       previousOutput: latestOutput,
-      feedback: latestFeedback,
+      feedback: feedbackToUse,
+      rewriteGoal: rewriteGoal ?? null,
     });
+
+    const usage = await enforceUsageLimit(
+      supabase,
+      user.id,
+      estimateTokensFromText(systemPrompt + userPrompt)
+    );
+
+    if (!usage.allowed) {
+      return NextResponse.json(
+        { error: "Daily AI request limit reached. Try again tomorrow." },
+        { status: 429 }
+      );
+    }
 
     const completion = await openai.chat.completions.create({
       model: OPENAI_MODEL,
@@ -146,6 +174,14 @@ export async function POST(request: Request) {
 
     const nextVersion = (latestVersionRow?.version ?? 0) + 1;
 
+    const { count: primaryCount } = await supabase
+      .from("outputs")
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", projectId)
+      .eq("is_primary", true);
+
+    const shouldBePrimary = (primaryCount ?? 0) === 0;
+
     const { data: output, error: outputError } = await supabase
       .from("outputs")
       .insert({
@@ -155,6 +191,7 @@ export async function POST(request: Request) {
         mode,
         version: nextVersion,
         content_md: content,
+        is_primary: shouldBePrimary,
       })
       .select("id, version, mode")
       .maybeSingle();
@@ -168,6 +205,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ output });
   } catch {
+    console.error("AI generation failed");
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }
