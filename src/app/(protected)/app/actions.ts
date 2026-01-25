@@ -7,10 +7,13 @@ import {
   brandVoiceSchema,
   briefSchema,
   clientSchema,
+  conceptSchema,
+  conceptVariantSchema,
+  creativeSpecSchema,
   feedbackSchema,
   projectSchema,
 } from "@/lib/validators";
-import { PROJECT_STATUSES } from "@/lib/constants";
+import { PROJECT_STATUSES, SCRIPT_FORMATS } from "@/lib/constants";
 
 export async function createClientAction(input: {
   name: string;
@@ -296,4 +299,158 @@ export async function createDemoDataAction() {
   });
 
   revalidatePath("/app");
+}
+
+export async function upsertCreativeSpecAction(input: {
+  projectId: string;
+  rawBriefText: string;
+  parsedJson?: Record<string, unknown> | null;
+  mustDo?: string[] | null;
+  mustAvoid?: string[] | null;
+  toneTags?: string[] | null;
+  deliverables?: Array<{ type: string; notes?: string | null }> | null;
+  keyMessage?: string | null;
+  audience?: string | null;
+}) {
+  const parsed = creativeSpecSchema.parse({
+    project_id: input.projectId,
+    raw_brief_text: input.rawBriefText,
+    parsed_json: input.parsedJson ?? null,
+    must_do: input.mustDo ?? null,
+    must_avoid: input.mustAvoid ?? null,
+    tone_tags: input.toneTags ?? null,
+    deliverables: input.deliverables ?? null,
+    key_message: input.keyMessage ?? null,
+    audience: input.audience ?? null,
+  });
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
+
+  const { data: spec, error } = await supabase
+    .from("creative_specs")
+    .upsert(
+      {
+        user_id: user.id,
+        project_id: parsed.project_id,
+        raw_brief_text: parsed.raw_brief_text,
+        parsed_json: parsed.parsed_json ?? null,
+        must_do: parsed.must_do ?? null,
+        must_avoid: parsed.must_avoid ?? null,
+        tone_tags: parsed.tone_tags ?? null,
+        deliverables: parsed.deliverables ?? null,
+        key_message: parsed.key_message ?? null,
+        audience: parsed.audience ?? null,
+      },
+      { onConflict: "project_id" }
+    )
+    .select()
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!spec) throw new Error("Failed to save creative spec");
+  revalidatePath(`/app/projects/${parsed.project_id}`);
+  return spec;
+}
+
+export async function createConceptAction(input: {
+  project_id: string;
+  title: string;
+  one_liner?: string | null;
+  thesis?: string | null;
+  doorDash_integration?: string | null;
+  scalability?: string | null;
+}) {
+  const parsed = conceptSchema.parse(input);
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
+
+  const { data: concept, error } = await supabase
+    .from("concepts")
+    .insert({
+      user_id: user.id,
+      project_id: parsed.project_id,
+      title: parsed.title,
+      one_liner: parsed.one_liner ?? null,
+      thesis: parsed.thesis ?? null,
+      doorDash_integration: parsed.doorDash_integration ?? null,
+      scalability: parsed.scalability ?? null,
+    })
+    .select()
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!concept) throw new Error("Failed to create concept");
+  revalidatePath(`/app/projects/${parsed.project_id}`);
+  return concept;
+}
+
+export async function createConceptVariantAction(input: {
+  concept_id: string;
+  angle: string;
+  summary?: string | null;
+}) {
+  const parsed = conceptVariantSchema.parse(input);
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
+
+  const { data: concept } = await supabase
+    .from("concepts")
+    .select("project_id")
+    .eq("id", parsed.concept_id)
+    .maybeSingle();
+
+  const { data: variant, error } = await supabase
+    .from("concept_variants")
+    .insert({
+      user_id: user.id,
+      concept_id: parsed.concept_id,
+      angle: parsed.angle,
+      summary: parsed.summary ?? null,
+    })
+    .select()
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!variant) throw new Error("Failed to create variant");
+  if (concept?.project_id) {
+    revalidatePath(`/app/projects/${concept.project_id}`);
+  }
+  return variant;
+}
+
+export async function setPrimaryScriptAction(input: {
+  projectId: string;
+  scriptId: string;
+  format: (typeof SCRIPT_FORMATS)[number];
+}) {
+  const supabase = await createClient();
+  const { error: resetError } = await supabase
+    .from("scripts")
+    .update({ is_primary: false })
+    .eq("project_id", input.projectId)
+    .eq("format", input.format);
+  if (resetError) throw resetError;
+
+  const { error } = await supabase
+    .from("scripts")
+    .update({ is_primary: true })
+    .eq("id", input.scriptId)
+    .eq("project_id", input.projectId);
+  if (error) throw error;
+
+  revalidatePath(`/app/projects/${input.projectId}`);
+  revalidatePath(`/app/projects/${input.projectId}/pitch`);
 }

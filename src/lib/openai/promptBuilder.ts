@@ -1,6 +1,7 @@
-import type { BrandVoice } from "@/lib/types";
+import type { BrandVoice, CreativeSpec } from "@/lib/types";
 import type { GenerationMode } from "@/lib/constants";
 import { OUTPUT_TEMPLATES } from "@/lib/ai/templates";
+import { buildGuardrails } from "@/lib/ai/guardrails";
 
 const BASE_SYSTEM_PROMPT = [
   "You are a senior creative director and brand strategist.",
@@ -45,6 +46,7 @@ export function buildPrompt(options: {
   previousOutput?: string | null;
   feedback?: string | null;
   rewriteGoal?: string | null;
+  creativeSpec?: CreativeSpec | null;
 }) {
   const template = OUTPUT_TEMPLATES[options.mode];
   const summaryBlock = options.parsedSummary
@@ -53,6 +55,7 @@ export function buildPrompt(options: {
 
   const brandVoiceBlock = formatBrandVoice(options.brandVoice);
   const referencesBlock = formatReferences(options.references);
+  const guardrailsBlock = buildGuardrails(options.creativeSpec ?? null);
 
   const systemPrompt = [
     BASE_SYSTEM_PROMPT,
@@ -73,6 +76,8 @@ export function buildPrompt(options: {
     options.ideaSeed ? "\nIdea seed:" : null,
     options.ideaSeed,
     referencesBlock ? "\n" + referencesBlock : null,
+    guardrailsBlock ? "\nConstraints:" : null,
+    guardrailsBlock,
     options.previousOutput ? "\nLatest output (context):" : null,
     options.previousOutput,
     options.rewriteGoal ? "\nRewrite goal:" : null,

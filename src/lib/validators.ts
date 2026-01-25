@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { GENERATION_MODES, PROJECT_STATUSES } from "@/lib/constants";
+import { GENERATION_MODES, PROJECT_STATUSES, SCRIPT_FORMATS } from "@/lib/constants";
 
 export const clientSchema = z.object({
   name: z.string().min(1, "Client name is required"),
@@ -61,4 +61,66 @@ export const outputGenerateSchema = z.object({
 export const parseBriefSchema = z.object({
   briefId: z.string().uuid(),
   rawText: z.string().min(1),
+});
+
+export const creativeSpecSchema = z.object({
+  project_id: z.string().uuid(),
+  raw_brief_text: z.string().min(1, "Brief text is required"),
+  parsed_json: z.record(z.string(), z.any()).optional().nullable(),
+  must_do: z.array(z.string()).optional().nullable(),
+  must_avoid: z.array(z.string()).optional().nullable(),
+  tone_tags: z.array(z.string()).optional().nullable(),
+  deliverables: z
+    .array(z.object({ type: z.string(), notes: z.string().optional().nullable() }))
+    .optional()
+    .nullable(),
+  key_message: z.string().optional().nullable(),
+  audience: z.string().optional().nullable(),
+});
+
+export const parseCreativeSpecSchema = z.object({
+  projectId: z.string().uuid(),
+  rawText: z.string().min(1),
+});
+
+export const conceptSchema = z.object({
+  project_id: z.string().uuid(),
+  title: z.string().min(1, "Concept title is required"),
+  one_liner: z.string().optional().nullable(),
+  thesis: z.string().optional().nullable(),
+  doorDash_integration: z.string().optional().nullable(),
+  scalability: z.string().optional().nullable(),
+});
+
+export const conceptVariantSchema = z.object({
+  concept_id: z.string().uuid(),
+  angle: z.string().min(1, "Variant angle is required"),
+  summary: z.string().optional().nullable(),
+});
+
+export const generateConceptsSchema = z.object({
+  projectId: z.string().uuid(),
+});
+
+export const generateVariantsSchema = z.object({
+  conceptId: z.string().uuid(),
+});
+
+export const generateScriptSchema = z.object({
+  projectId: z.string().uuid(),
+  conceptId: z.string().uuid().optional().nullable(),
+  variantId: z.string().uuid().optional().nullable(),
+  format: z.enum(SCRIPT_FORMATS),
+});
+
+export const rewriteScriptSchema = z.object({
+  projectId: z.string().uuid(),
+  scriptId: z.string().uuid(),
+  rewriteGoal: z.string().optional().nullable(),
+  feedbackText: z.string().optional().nullable(),
+});
+
+export const generateStoryboardSchema = z.object({
+  projectId: z.string().uuid(),
+  scriptId: z.string().uuid(),
 });

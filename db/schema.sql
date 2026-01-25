@@ -204,3 +204,151 @@ create policy "Usage is updatable by owner" on public.usage
   for update using (auth.uid() = user_id);
 create policy "Usage is deletable by owner" on public.usage
   for delete using (auth.uid() = user_id);
+
+-- PHASE 2+ CREATIVE MAP / CONCEPTS / SCRIPTS / STORYBOARDS
+-- Run the statements below in the Supabase SQL Editor to apply the latest schema updates.
+-- All statements are intended to be safe to run on an existing database (idempotent).
+
+create table if not exists public.creative_specs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users (id) on delete cascade not null,
+  project_id uuid references public.projects (id) on delete cascade not null,
+  raw_brief_text text not null,
+  parsed_json jsonb,
+  must_do jsonb,
+  must_avoid jsonb,
+  tone_tags jsonb,
+  deliverables jsonb,
+  key_message text,
+  audience text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create unique index if not exists creative_specs_project_unique on public.creative_specs (project_id);
+create index if not exists creative_specs_project_idx on public.creative_specs (project_id);
+
+create table if not exists public.concepts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users (id) on delete cascade not null,
+  project_id uuid references public.projects (id) on delete cascade not null,
+  title text not null,
+  one_liner text,
+  thesis text,
+  share_triggers jsonb,
+  doorDash_integration text,
+  cast_archetypes jsonb,
+  beats jsonb,
+  risks jsonb,
+  scalability jsonb,
+  created_at timestamptz default now()
+);
+
+create index if not exists concepts_project_idx on public.concepts (project_id);
+
+create table if not exists public.concept_variants (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users (id) on delete cascade not null,
+  concept_id uuid references public.concepts (id) on delete cascade not null,
+  angle text not null,
+  summary text,
+  tradeoffs jsonb,
+  created_at timestamptz default now()
+);
+
+create index if not exists concept_variants_concept_idx on public.concept_variants (concept_id);
+
+create table if not exists public.scripts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users (id) on delete cascade not null,
+  project_id uuid references public.projects (id) on delete cascade not null,
+  concept_id uuid references public.concepts (id) on delete set null,
+  variant_id uuid references public.concept_variants (id) on delete set null,
+  format text not null,
+  script_md text not null,
+  meta jsonb,
+  version int default 1,
+  is_primary boolean default false,
+  created_at timestamptz default now()
+);
+
+create index if not exists scripts_project_format_created_idx
+  on public.scripts (project_id, format, created_at);
+create unique index if not exists scripts_primary_unique on public.scripts (project_id, format)
+  where is_primary = true;
+
+create table if not exists public.storyboards (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users (id) on delete cascade not null,
+  project_id uuid references public.projects (id) on delete cascade not null,
+  script_id uuid references public.scripts (id) on delete cascade not null,
+  frames jsonb not null,
+  shotlist jsonb,
+  created_at timestamptz default now()
+);
+
+create index if not exists storyboards_script_idx on public.storyboards (script_id);
+
+alter table public.creative_specs enable row level security;
+alter table public.concepts enable row level security;
+alter table public.concept_variants enable row level security;
+alter table public.scripts enable row level security;
+alter table public.storyboards enable row level security;
+
+create policy "Creative specs are viewable by owner" on public.creative_specs
+  for select using (auth.uid() = user_id);
+create policy "Creative specs are insertable by owner" on public.creative_specs
+  for insert with check (auth.uid() = user_id);
+create policy "Creative specs are updatable by owner" on public.creative_specs
+  for update using (auth.uid() = user_id);
+create policy "Creative specs are deletable by owner" on public.creative_specs
+  for delete using (auth.uid() = user_id);
+
+create policy "Concepts are viewable by owner" on public.concepts
+  for select using (auth.uid() = user_id);
+create policy "Concepts are insertable by owner" on public.concepts
+  for insert with check (auth.uid() = user_id);
+create policy "Concepts are updatable by owner" on public.concepts
+  for update using (auth.uid() = user_id);
+create policy "Concepts are deletable by owner" on public.concepts
+  for delete using (auth.uid() = user_id);
+
+create policy "Concept variants are viewable by owner" on public.concept_variants
+  for select using (auth.uid() = user_id);
+create policy "Concept variants are insertable by owner" on public.concept_variants
+  for insert with check (auth.uid() = user_id);
+create policy "Concept variants are updatable by owner" on public.concept_variants
+  for update using (auth.uid() = user_id);
+create policy "Concept variants are deletable by owner" on public.concept_variants
+  for delete using (auth.uid() = user_id);
+
+create policy "Scripts are viewable by owner" on public.scripts
+  for select using (auth.uid() = user_id);
+create policy "Scripts are insertable by owner" on public.scripts
+  for insert with check (auth.uid() = user_id);
+create policy "Scripts are updatable by owner" on public.scripts
+  for update using (auth.uid() = user_id);
+create policy "Scripts are deletable by owner" on public.scripts
+  for delete using (auth.uid() = user_id);
+
+create policy "Storyboards are viewable by owner" on public.storyboards
+  for select using (auth.uid() = user_id);
+create policy "Storyboards are insertable by owner" on public.storyboards
+  for insert with check (auth.uid() = user_id);
+create policy "Storyboards are updatable by owner" on public.storyboards
+  for update using (auth.uid() = user_id);
+create policy "Storyboards are deletable by owner" on public.storyboards
+  for delete using (auth.uid() = user_id);
+
+create or replace function public.set_creative_specs_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists creative_specs_set_updated_at on public.creative_specs;
+create trigger creative_specs_set_updated_at
+  before update on public.creative_specs
+  for each row execute function public.set_creative_specs_updated_at();

@@ -1,4 +1,4 @@
-import type { GenerationMode, ProjectStatus } from "@/lib/constants";
+import type { GenerationMode, ProjectStatus, ScriptFormat } from "@/lib/constants";
 
 export type BrandVoice = {
   tone?: string;
@@ -79,3 +79,77 @@ export type Reference = {
 };
 
 export type ProjectWithClient = Project & { client: Pick<Client, "name"> | null };
+
+export type CreativeSpec = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  raw_brief_text: string;
+  parsed_json: Record<string, unknown> | null;
+  must_do: string[] | null;
+  must_avoid: string[] | null;
+  tone_tags: string[] | null;
+  deliverables: Array<{ type: string; notes?: string | null }> | null;
+  key_message: string | null;
+  audience: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Concept = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  title: string;
+  one_liner: string | null;
+  thesis: string | null;
+  share_triggers: string[] | null;
+  doorDash_integration: string | null;
+  cast_archetypes: string[] | null;
+  beats: Array<Record<string, unknown>> | null;
+  risks: Array<{ risk: string; mitigation?: string | null }> | null;
+  scalability: string | null;
+  created_at: string;
+};
+
+export type ConceptVariant = {
+  id: string;
+  user_id: string;
+  concept_id: string;
+  angle: string;
+  summary: string | null;
+  tradeoffs: string[] | null;
+  created_at: string;
+};
+
+export type Script = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  concept_id: string | null;
+  variant_id: string | null;
+  format: ScriptFormat;
+  script_md: string;
+  meta: Record<string, unknown> | null;
+  version: number;
+  is_primary: boolean;
+  created_at: string;
+};
+
+export type Storyboard = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  script_id: string;
+  frames: Array<{
+    frame: number;
+    shot: string;
+    setting: string;
+    action: string;
+    os_text?: string | null;
+    audio?: string | null;
+    props?: string[] | null;
+  }>;
+  shotlist: Record<string, unknown> | null;
+  created_at: string;
+};

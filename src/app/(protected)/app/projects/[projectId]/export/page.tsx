@@ -6,6 +6,8 @@ import { OUTPUT_TEMPLATE_LIST } from "@/lib/ai/templates";
 import ExportControls from "@/components/project/export-controls";
 import MarkdownContent from "@/components/markdown/markdown-content";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import type { Client, Project } from "@/lib/types";
 
 interface ExportPageProps {
@@ -78,6 +80,9 @@ export default async function ExportPage({ params, searchParams }: ExportPagePro
             Print or save this page as a PDF for your client.
           </p>
         </div>
+        <Button variant="secondary" asChild>
+          <Link href={`/app/projects/${projectId}/pitch`}>Client pitch pack</Link>
+        </Button>
       </div>
       <ExportControls />
 

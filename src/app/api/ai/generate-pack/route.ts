@@ -71,6 +71,12 @@ export async function POST(request: Request) {
       );
     }
 
+    const { data: creativeSpec } = await supabase
+      .from("creative_specs")
+      .select("*")
+      .eq("project_id", projectId)
+      .maybeSingle();
+
     const references = (
       await supabase
         .from("references")
@@ -97,6 +103,7 @@ export async function POST(request: Request) {
         references: references ?? [],
         previousOutput: null,
         feedback: null,
+        creativeSpec: creativeSpec ?? null,
       });
 
       const usage = await enforceUsageLimit(

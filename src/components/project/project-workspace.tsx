@@ -15,19 +15,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { GENERATION_MODES, GENERATION_MODE_LABELS, PROJECT_STATUSES } from "@/lib/constants";
 import { OUTPUT_TEMPLATE_LIST } from "@/lib/ai/templates";
-import { createBriefAction, createFeedbackAction, updateProjectStatusAction } from "@/app/(protected)/app/actions";
-import type { Brief, Client, Feedback, Output, Project, Reference } from "@/lib/types";
+import { createFeedbackAction, updateProjectStatusAction } from "@/app/(protected)/app/actions";
+import type {
+  Brief,
+  Client,
+  Concept,
+  ConceptVariant,
+  CreativeSpec,
+  Feedback,
+  Output,
+  Project,
+  Reference,
+  Script,
+  Storyboard,
+} from "@/lib/types";
 import ReferencesPanel from "@/components/project/references-panel";
 import OutputsPanel from "@/components/project/outputs-panel";
 import ShareProjectButton from "@/components/project/share-project-button";
 import FeedbackRewritePanel from "@/components/project/feedback-rewrite-panel";
 import CampaignGenerator from "@/components/project/campaign-generator";
-
-const briefSchema = z.object({
-  raw_text: z.string().min(1, "Brief is required"),
-});
-
-type BriefFormValues = z.infer<typeof briefSchema>;
+import CreativeMapPanel from "@/components/project/creative-map-panel";
+import ConceptsPanel from "@/components/project/concepts-panel";
+import ScriptsPanel from "@/components/project/scripts-panel";
+import StoryboardPanel from "@/components/project/storyboard-panel";
+import PitchBuilderPanel from "@/components/project/pitch-builder-panel";
 
 type IdeaFormValues = {
   mode: (typeof GENERATION_MODES)[number];
@@ -53,14 +64,15 @@ const ideaFormSchema = z.object({
   includeReferences: z.boolean(),
 });
 
-const sampleBrief =
-  "Launch a sustainable travel luggage line for remote workers. Target: digital nomads 25-40. Must include social-first launch, influencer kits, and a preorder waitlist. Budget mid-range. Timeline: 8 weeks.";
 const sampleSeed = "Make packing feel like prepping for a new chapter, not a chore.";
 
 const SECTIONS = [
   { id: "overview", label: "Overview" },
-  { id: "brief", label: "Brief" },
-  { id: "ideas", label: "Ideas" },
+  { id: "brief", label: "Creative Map" },
+  { id: "concepts", label: "Concepts" },
+  { id: "scripts", label: "Scripts" },
+  { id: "storyboard", label: "Storyboard" },
+  { id: "pitch", label: "Pitch Builder" },
   { id: "outputs", label: "Outputs" },
   { id: "feedback", label: "Feedback" },
   { id: "references", label: "References" },
@@ -87,17 +99,27 @@ export default function ProjectWorkspace({
   project,
   client,
   brief,
+  creativeSpec,
   outputs,
   feedback,
   references,
+  concepts,
+  variantsByConcept,
+  scripts,
+  storyboardsByScript,
   aiEnabled,
 }: {
   project: Project & { client?: Client | null };
   client: Client | null;
   brief: Brief | null;
+  creativeSpec: CreativeSpec | null;
   outputs: Output[];
   feedback: Feedback[];
   references: Reference[];
+  concepts: Concept[];
+  variantsByConcept: Record<string, ConceptVariant[]>;
+  scripts: Script[];
+  storyboardsByScript: Record<string, Storyboard | null>;
   aiEnabled: boolean;
 }) {
   const router = useRouter();
@@ -123,13 +145,6 @@ export default function ProjectWorkspace({
     [pathname, router, searchParams]
   );
 
-  const briefForm = useForm<BriefFormValues>({
-    resolver: zodResolver(briefSchema),
-    defaultValues: {
-      raw_text: brief?.raw_text ?? "",
-    },
-  });
-
   const ideaForm = useForm<IdeaFormValues>({
     resolver: zodResolver(ideaFormSchema),
     defaultValues: {
@@ -147,10 +162,6 @@ export default function ProjectWorkspace({
       outputId: "general",
     },
   });
-
-  useEffect(() => {
-    briefForm.reset({ raw_text: brief?.raw_text ?? "" });
-  }, [brief?.raw_text, briefForm]);
 
   useEffect(() => {
     setStatusValue(project.status);
@@ -172,52 +183,6 @@ export default function ProjectWorkspace({
   const recentFeedback = feedback.slice(0, 3);
   const referencePreview = references.slice(0, 4);
 
-  const handleSaveBrief = async (values: BriefFormValues) => {
-    try {
-      await createBriefAction({
-        project_id: project.id,
-        raw_text: values.raw_text,
-      });
-      toast.success("Brief saved");
-      router.refresh();
-    } catch {
-      toast.error("Failed to save brief");
-    }
-  };
-
-  const handleParseBrief = async () => {
-    if (!brief?.id) {
-      toast.error("Save a brief before parsing.");
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/ai/parse-brief", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ briefId: brief.id, rawText: brief.raw_text }),
-      });
-
-      const data = await response.json();
-      if (response.status === 400 && data?.error === "Missing OPENAI_API_KEY") {
-        toast.error("AI disabled: add OPENAI_API_KEY to .env.local and restart.");
-        return;
-      }
-      if (response.status === 429) {
-        toast.error(data?.error || "Daily AI limit reached. Try again tomorrow.");
-        return;
-      }
-      if (!response.ok) {
-        toast.error(data.error || "Failed to parse brief");
-        return;
-      }
-
-      toast.success("Brief parsed");
-      router.refresh();
-    } catch {
-      toast.error("Failed to parse brief");
-    }
-  };
 
   const generateOutput = useCallback(
     async (payload: {
@@ -318,10 +283,10 @@ export default function ProjectWorkspace({
     return () => window.removeEventListener("keydown", handler);
   }, [ideaForm, handleIdeaSubmit]);
 
-  const briefSnapshot = brief?.parsed_summary as Record<string, unknown> | null;
-  const briefSummary = briefSnapshot
-    ? JSON.stringify(briefSnapshot, null, 2)
-    : brief?.raw_text ?? "No brief yet.";
+  const creativeSnapshot =
+    (creativeSpec?.parsed_json as Record<string, unknown> | null) ??
+    (brief?.parsed_summary as Record<string, unknown> | null);
+  const creativeSummary = creativeSpec?.raw_brief_text ?? brief?.raw_text ?? "No brief yet.";
 
   return (
     <div className="space-y-6">
@@ -359,11 +324,14 @@ export default function ProjectWorkspace({
                 ))}
               </SelectContent>
             </Select>
-            <Button onClick={() => setSectionAndPush("ideas")} disabled={!aiEnabled}>
+            <Button onClick={() => setSectionAndPush("concepts")} disabled={!aiEnabled}>
               Generate
             </Button>
             <Button variant="secondary" asChild>
               <Link href={`/app/projects/${project.id}/export`}>Export</Link>
+            </Button>
+            <Button variant="secondary" asChild>
+              <Link href={`/app/projects/${project.id}/pitch`}>Pitch</Link>
             </Button>
             <ShareProjectButton projectId={project.id} />
           </div>
@@ -392,15 +360,15 @@ export default function ProjectWorkspace({
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Brief snapshot</CardTitle>
+                  <CardTitle>Creative map snapshot</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {briefSnapshot ? (
+                  {creativeSnapshot ? (
                     <pre className="whitespace-pre-wrap rounded-2xl bg-muted/50 p-4 text-xs">
-                      {JSON.stringify(briefSnapshot, null, 2)}
+                      {JSON.stringify(creativeSnapshot, null, 2)}
                     </pre>
                   ) : (
-                    <p className="text-sm text-muted-foreground">{briefSummary}</p>
+                    <p className="text-sm text-muted-foreground">{creativeSummary}</p>
                   )}
                 </CardContent>
               </Card>
@@ -486,7 +454,7 @@ export default function ProjectWorkspace({
                       Jump into the Idea Composer and start generating outputs.
                     </p>
                   </div>
-                  <Button onClick={() => setSectionAndPush("ideas")} disabled={!aiEnabled}>
+                  <Button onClick={() => setSectionAndPush("outputs")} disabled={!aiEnabled}>
                     Generate deliverables
                   </Button>
                 </CardContent>
@@ -495,159 +463,151 @@ export default function ProjectWorkspace({
           ) : null}
 
           {section === "brief" ? (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Brief ingestion</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <form
-                    className="space-y-4"
-                    onSubmit={briefForm.handleSubmit(handleSaveBrief)}
-                  >
-                    <Textarea
-                      rows={8}
-                      placeholder="Paste your brief here..."
-                      {...briefForm.register("raw_text")}
-                    />
-                    <div className="flex flex-wrap gap-2">
-                      <Button type="submit">Save brief</Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={handleParseBrief}
-                        disabled={!brief}
-                      >
-                        Parse Brief (AI)
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => briefForm.setValue("raw_text", sampleBrief)}
-                      >
-                        Use sample brief
-                      </Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Brief snapshot</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {briefSnapshot ? (
-                    <pre className="whitespace-pre-wrap rounded-2xl bg-muted/50 p-4 text-xs">
-                      {JSON.stringify(briefSnapshot, null, 2)}
-                    </pre>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No parsed snapshot yet. Run the AI parser for a quick summary.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+            <CreativeMapPanel
+              projectId={project.id}
+              brief={brief}
+              creativeSpec={creativeSpec}
+              aiEnabled={aiEnabled}
+            />
           ) : null}
 
-          {section === "ideas" ? (
-            <Card>
-              <CardHeader>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <CardTitle>Idea composer</CardTitle>
-                  {!aiEnabled ? <Badge variant="destructive">AI Disabled</Badge> : null}
-                </div>
-              </CardHeader>
-              <CardContent>
-                {!brief ? (
-                  <p className="text-sm text-muted-foreground">
-                    Add a brief before generating campaign outputs.
-                  </p>
-                ) : (
-                  <form
-                    className="space-y-4"
-                    onSubmit={ideaForm.handleSubmit(handleIdeaSubmit)}
-                  >
-                    <div className="space-y-2">
-                      <Label>Generation mode</Label>
-                      <Select
-                        value={ideaForm.watch("mode")}
-                        onValueChange={(value) =>
-                          ideaForm.setValue("mode", value as IdeaFormValues["mode"])
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select mode" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {OUTPUT_TEMPLATE_LIST.map((template) => (
-                            <SelectItem key={template.mode} value={template.mode}>
-                              {template.label} — {template.description}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Idea seed (optional)</Label>
-                      <Textarea
-                        rows={4}
-                        placeholder="Drop a starting angle, hook, or insight..."
-                        {...ideaForm.register("seedText")}
-                      />
-                    </div>
-                    <div className="flex flex-wrap gap-4 text-sm">
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={ideaForm.watch("includeBrandVoice")}
-                          onChange={(event) =>
-                            ideaForm.setValue(
-                              "includeBrandVoice",
-                              event.target.checked
-                            )
-                          }
-                        />
-                        Include brand voice
-                      </label>
-                      <label className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={ideaForm.watch("includeReferences")}
-                          onChange={(event) =>
-                            ideaForm.setValue(
-                              "includeReferences",
-                              event.target.checked
-                            )
-                          }
-                        />
-                        Include references
-                      </label>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button type="submit" disabled={isGenerating || !aiEnabled}>
-                        {isGenerating ? "Generating..." : "Generate"}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={() => ideaForm.setValue("seedText", sampleSeed)}
-                      >
-                        Use sample seed
-                      </Button>
-                      <span className="text-xs text-muted-foreground">
-                        Tip: Press Cmd/Ctrl + Enter to generate.
-                      </span>
-                    </div>
-                  </form>
-                )}
-              </CardContent>
-            </Card>
+          {section === "concepts" ? (
+            <ConceptsPanel
+              projectId={project.id}
+              concepts={concepts}
+              variantsByConcept={variantsByConcept}
+              aiEnabled={aiEnabled}
+            />
+          ) : null}
+
+          {section === "scripts" ? (
+            <ScriptsPanel
+              projectId={project.id}
+              concepts={concepts}
+              variantsByConcept={variantsByConcept}
+              scripts={scripts}
+              feedback={feedback}
+              aiEnabled={aiEnabled}
+            />
+          ) : null}
+
+          {section === "storyboard" ? (
+            <StoryboardPanel
+              projectId={project.id}
+              scripts={scripts}
+              storyboardsByScript={storyboardsByScript}
+              aiEnabled={aiEnabled}
+            />
+          ) : null}
+
+          {section === "pitch" ? (
+            <PitchBuilderPanel
+              projectId={project.id}
+              creativeSpec={creativeSpec}
+              concepts={concepts}
+              variantsByConcept={variantsByConcept}
+              scripts={scripts}
+              storyboardsByScript={storyboardsByScript}
+              references={references}
+              feedback={feedback}
+              aiEnabled={aiEnabled}
+            />
           ) : null}
 
           {section === "outputs" ? (
             <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <CardTitle>Legacy outputs generator</CardTitle>
+                    {!aiEnabled ? <Badge variant="destructive">AI Disabled</Badge> : null}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {!brief ? (
+                    <p className="text-sm text-muted-foreground">
+                      Add a brief before generating legacy campaign outputs.
+                    </p>
+                  ) : (
+                    <form
+                      className="space-y-4"
+                      onSubmit={ideaForm.handleSubmit(handleIdeaSubmit)}
+                    >
+                      <div className="space-y-2">
+                        <Label>Generation mode</Label>
+                        <Select
+                          value={ideaForm.watch("mode")}
+                          onValueChange={(value) =>
+                            ideaForm.setValue("mode", value as IdeaFormValues["mode"])
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select mode" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {OUTPUT_TEMPLATE_LIST.map((template) => (
+                              <SelectItem key={template.mode} value={template.mode}>
+                                {template.label} — {template.description}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Idea seed (optional)</Label>
+                        <Textarea
+                          rows={4}
+                          placeholder="Drop a starting angle, hook, or insight..."
+                          {...ideaForm.register("seedText")}
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-4 text-sm">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={ideaForm.watch("includeBrandVoice")}
+                            onChange={(event) =>
+                              ideaForm.setValue(
+                                "includeBrandVoice",
+                                event.target.checked
+                              )
+                            }
+                          />
+                          Include brand voice
+                        </label>
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={ideaForm.watch("includeReferences")}
+                            onChange={(event) =>
+                              ideaForm.setValue(
+                                "includeReferences",
+                                event.target.checked
+                              )
+                            }
+                          />
+                          Include references
+                        </label>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button type="submit" disabled={isGenerating || !aiEnabled}>
+                          {isGenerating ? "Generating..." : "Generate"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => ideaForm.setValue("seedText", sampleSeed)}
+                        >
+                          Use sample seed
+                        </Button>
+                        <span className="text-xs text-muted-foreground">
+                          Tip: Press Cmd/Ctrl + Enter to generate.
+                        </span>
+                      </div>
+                    </form>
+                  )}
+                </CardContent>
+              </Card>
               <FeedbackRewritePanel projectId={project.id} feedback={feedback} />
               <OutputsPanel outputs={outputs} projectId={project.id} />
             </div>
@@ -728,11 +688,18 @@ export default function ProjectWorkspace({
                   Generate a clean export view with the latest brief snapshot,
                   outputs, feedback, and references.
                 </p>
-                <Button asChild>
-                  <Link href={`/app/projects/${project.id}/export`}>
-                    Generate export view
-                  </Link>
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild>
+                    <Link href={`/app/projects/${project.id}/export`}>
+                      Generate export view
+                    </Link>
+                  </Button>
+                  <Button variant="secondary" asChild>
+                    <Link href={`/app/projects/${project.id}/pitch`}>
+                      Client pitch pack
+                    </Link>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ) : null}

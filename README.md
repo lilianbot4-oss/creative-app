@@ -56,6 +56,18 @@ If you log in and see an empty dashboard, use **Create demo data** to seed a sam
 7. Review outputs, add feedback, and regenerate.
 8. Upload references and export a PDF report.
 
+## Manual QA checklist
+1. Log in.
+2. Complete onboarding (or skip) and land on a project page.
+3. Creative Map: save raw brief, parse creative map (if AI enabled), edit constraints, save.
+4. Concepts: generate concepts, open a concept detail, generate variants.
+5. Scripts: generate a launch script, set primary, rewrite with feedback.
+6. Storyboard: generate from a script, verify frames + shotlist render.
+7. Pitch Builder: open pitch pack and print view.
+8. Outputs (legacy): generate an output, set primary, compare versions.
+9. Export: open export view and confirm primary output appears.
+10. AI disabled: remove OPENAI_API_KEY, verify buttons disable and toasts show.
+
 ## Troubleshooting
 - **Auth redirect loop**: confirm Site URL + redirect URLs in Supabase Auth settings.
 - **RLS errors**: ensure you ran `db/schema.sql` and that the user is logged in.

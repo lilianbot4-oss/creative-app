@@ -1,0 +1,49 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - paragraph [ref=e6]: Creative Copilot
+          - heading "Workspace" [level=2] [ref=e7]
+          - generic [ref=e8]: MVP
+        - navigation [ref=e9]:
+          - link "Dashboard" [ref=e10] [cursor=pointer]:
+            - /url: /app
+          - link "Clients" [ref=e11] [cursor=pointer]:
+            - /url: /app/clients
+          - link "Projects" [ref=e12] [cursor=pointer]:
+            - /url: /app/projects
+        - generic [ref=e13]:
+          - generic [ref=e14]: Signed in as
+          - generic [ref=e15]: playwright+1769354846190@example.com
+          - button "Sign out" [ref=e16]
+    - generic [ref=e17]:
+      - banner [ref=e18]:
+        - generic [ref=e19]:
+          - heading "Creative Campaign Copilot" [level=1] [ref=e20]
+          - paragraph [ref=e21]: Organize briefs, generate pitches, ship campaigns.
+      - main [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - generic [ref=e25]:
+              - heading "Dashboard" [level=2] [ref=e26]
+              - paragraph [ref=e27]: Quick access to your latest projects and client workspaces.
+            - generic [ref=e28]:
+              - button "Create Client" [ref=e29]
+              - button "Create Project" [ref=e30]
+          - generic [ref=e31]:
+            - generic [ref=e33]: Recent projects
+            - generic [ref=e36]:
+              - generic [ref=e37]:
+                - paragraph [ref=e38]: Playwright Project
+                - paragraph [ref=e39]: Playwright Client
+              - link "Open" [ref=e40] [cursor=pointer]:
+                - /url: /app/projects/a8f36c54-b954-42c1-977f-12b8af0839e6
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e46] [cursor=pointer]:
+    - img [ref=e47]
+  - alert [ref=e50]
+```

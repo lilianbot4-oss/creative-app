@@ -1,5 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Client, Project, Brief, Output, Feedback, Reference } from "@/lib/types";
+import type {
+  Client,
+  Project,
+  Brief,
+  Output,
+  Feedback,
+  Reference,
+  CreativeSpec,
+  Concept,
+  ConceptVariant,
+  Script,
+  Storyboard,
+} from "@/lib/types";
 
 export async function getUser() {
   const supabase = await createClient();
@@ -140,4 +152,112 @@ export async function getClientProjectCounts() {
     clientCount: clientCount ?? 0,
     projectCount: projectCount ?? 0,
   };
+}
+
+export async function getCreativeSpec(projectId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("creative_specs")
+    .select("*")
+    .eq("project_id", projectId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as CreativeSpec | null;
+}
+
+export async function upsertCreativeSpec(input: {
+  projectId: string;
+  rawBriefText: string;
+  parsedJson?: Record<string, unknown> | null;
+  mustDo?: string[] | null;
+  mustAvoid?: string[] | null;
+  toneTags?: string[] | null;
+  deliverables?: Array<{ type: string; notes?: string | null }> | null;
+  keyMessage?: string | null;
+  audience?: string | null;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data, error } = await supabase
+    .from("creative_specs")
+    .upsert(
+      {
+        user_id: user.id,
+        project_id: input.projectId,
+        raw_brief_text: input.rawBriefText,
+        parsed_json: input.parsedJson ?? null,
+        must_do: input.mustDo ?? null,
+        must_avoid: input.mustAvoid ?? null,
+        tone_tags: input.toneTags ?? null,
+        deliverables: input.deliverables ?? null,
+        key_message: input.keyMessage ?? null,
+        audience: input.audience ?? null,
+      },
+      { onConflict: "project_id" }
+    )
+    .select()
+    .maybeSingle();
+  if (error) throw error;
+  return data as CreativeSpec | null;
+}
+
+export async function listConcepts(projectId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("concepts")
+    .select("*")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Concept[];
+}
+
+export async function listVariants(conceptId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("concept_variants")
+    .select("*")
+    .eq("concept_id", conceptId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as ConceptVariant[];
+}
+
+export async function listScripts(projectId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("scripts")
+    .select("*")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Script[];
+}
+
+export async function listScriptsForConcept(conceptId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("scripts")
+    .select("*")
+    .eq("concept_id", conceptId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Script[];
+}
+
+export async function getStoryboard(scriptId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("storyboards")
+    .select("*")
+    .eq("script_id", scriptId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data as Storyboard | null;
 }
