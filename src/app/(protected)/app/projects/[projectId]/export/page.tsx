@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getLatestBrief, getOutputs, getFeedback, getReferences, listConceptAssetsByProject } from "@/lib/data";
+import {
+  getLatestBrief,
+  getOutputs,
+  getFeedback,
+  getReferences,
+  getPrimaryKeyVisualsForProject,
+} from "@/lib/data";
 import { GENERATION_MODE_LABELS } from "@/lib/constants";
 import { OUTPUT_TEMPLATE_LIST } from "@/lib/ai/templates";
 import ExportControls from "@/components/project/export-controls";
@@ -10,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import type { Client, Project } from "@/lib/types";
 import { getPublicStorageUrl } from "@/lib/storage";
+import KeyVisualPreview from "@/components/media/key-visual-preview";
+import CreativeMapSnapshot from "@/components/project/creative-map-snapshot";
 
 interface ExportPageProps {
   params: Promise<{ projectId: string }>;
@@ -25,7 +33,7 @@ export default async function ExportPage({ params, searchParams }: ExportPagePro
   const includeFeedback = resolvedSearch?.feedback !== "false";
   const includeAppendix = resolvedSearch?.appendix !== "false";
   const includeProvenance = resolvedSearch?.provenance === "true";
-  const includeGallery = resolvedSearch?.gallery === "true";
+  const includeGallery = resolvedSearch?.gallery !== "false";
   let project: (Project & { client: Client | null }) | null = null;
   try {
     const supabase = await createClient();
@@ -44,19 +52,14 @@ export default async function ExportPage({ params, searchParams }: ExportPagePro
     notFound();
   }
 
-  const [brief, outputs, feedback, references, conceptAssets] = await Promise.all([
+  const [brief, outputs, feedback, references, keyVisualGroups] = await Promise.all([
     getLatestBrief(projectId),
     getOutputs(projectId),
     getFeedback(projectId),
     getReferences(projectId),
-    listConceptAssetsByProject(projectId),
+    getPrimaryKeyVisualsForProject(projectId),
   ]);
-
-  const primaryVisualByConcept = new Map(
-    conceptAssets
-      .filter((asset) => asset.asset_type === "key_visual" && asset.is_primary && asset.concept_id)
-      .map((asset) => [asset.concept_id as string, asset])
-  );
+  const visualGroups = keyVisualGroups.filter((group) => group.primary);
 
   const latestByMode = new Map<string, (typeof outputs)[number]>();
   outputs
@@ -125,9 +128,7 @@ export default async function ExportPage({ params, searchParams }: ExportPagePro
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             {brief?.parsed_summary ? (
-              <pre className="whitespace-pre-wrap rounded-2xl bg-muted/50 p-4 text-xs">
-                {JSON.stringify(brief.parsed_summary, null, 2)}
-              </pre>
+              <CreativeMapSnapshot snapshot={brief.parsed_summary} />
             ) : (
               <p className="text-muted-foreground">
                 {brief?.raw_text ?? "No brief available."}
@@ -159,42 +160,57 @@ export default async function ExportPage({ params, searchParams }: ExportPagePro
           </CardContent>
         </Card>
 
-        {primaryVisualByConcept.size > 0 ? (
+        {visualGroups.length > 0 ? (
           <Card>
             <CardHeader>
               <CardTitle>Primary key visuals</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-3 md:grid-cols-2">
-              {Array.from(primaryVisualByConcept.values()).map((asset) => (
-                <div key={asset.id} className="overflow-hidden rounded-xl border border-border/60">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={getPublicStorageUrl(asset.storage_bucket, asset.storage_path)}
-                    alt="Primary key visual"
-                    className="h-40 w-full object-cover"
-                  />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        ) : null}
-
-        {includeGallery && conceptAssets.length > 0 ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Image gallery</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-3 md:grid-cols-2">
-              {conceptAssets.map((asset) => (
-                <div key={asset.id} className="overflow-hidden rounded-xl border border-border/60">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={getPublicStorageUrl(asset.storage_bucket, asset.storage_path)}
-                    alt="Generated visual"
-                    className="h-40 w-full object-cover"
-                  />
-                </div>
-              ))}
+            <CardContent className="space-y-6">
+              {visualGroups.map((group) => {
+                if (!group.primary) return null;
+                const primaryUrl = getPublicStorageUrl(
+                  group.primary.storage_bucket,
+                  group.primary.storage_path
+                );
+                return (
+                  <div key={group.concept_id} className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="text-base font-semibold">
+                        {group.concept_title ?? "Key visual"}
+                      </h3>
+                    </div>
+                    <KeyVisualPreview
+                      src={primaryUrl}
+                      alt={`Primary key visual for ${group.concept_title ?? "concept"}`}
+                      label="Primary key visual"
+                      aspect="hero"
+                      enableLightbox
+                      priorityHint
+                    />
+                    {includeGallery && group.gallery.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                        {group.gallery.map((asset) => {
+                          const url = getPublicStorageUrl(
+                            asset.storage_bucket,
+                            asset.storage_path
+                          );
+                          return (
+                            <KeyVisualPreview
+                              key={asset.id}
+                              src={url}
+                              alt="Key visual variation"
+                              aspect="thumb"
+                              enableLightbox
+                              label={asset.is_primary ? "Primary" : undefined}
+                              className="p-2"
+                            />
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         ) : null}

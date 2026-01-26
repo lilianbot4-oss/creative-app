@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -42,6 +42,7 @@ import ConceptsPanel from "@/components/project/concepts-panel";
 import ScriptsPanel from "@/components/project/scripts-panel";
 import StoryboardPanel from "@/components/project/storyboard-panel";
 import PitchBuilderPanel from "@/components/project/pitch-builder-panel";
+import CreativeMapSnapshot from "@/components/project/creative-map-snapshot";
 import type { AISettings } from "@/lib/ai/settings";
 
 type IdeaFormValues = {
@@ -296,8 +297,6 @@ export default function ProjectWorkspace({
   const creativeSnapshot =
     (creativeSpec?.parsed_json as Record<string, unknown> | null) ??
     (brief?.parsed_summary as Record<string, unknown> | null);
-  const creativeSummary = creativeSpec?.raw_brief_text ?? brief?.raw_text ?? "No brief yet.";
-
   const textModelInfo = getTextModelInfo(aiSettings?.text_model);
   const imageModelInfo = getImageModelInfo(aiSettings?.image_model);
 
@@ -380,15 +379,12 @@ export default function ProjectWorkspace({
               <Card>
                 <CardHeader>
                   <CardTitle>Creative map snapshot</CardTitle>
+                  <CardDescription>
+                    This is an AI-extracted map of the brief constraints, tone, and creative guidance.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {creativeSnapshot ? (
-                    <pre className="whitespace-pre-wrap rounded-2xl bg-muted/50 p-4 text-xs">
-                      {JSON.stringify(creativeSnapshot, null, 2)}
-                    </pre>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">{creativeSummary}</p>
-                  )}
+                  <CreativeMapSnapshot snapshot={creativeSnapshot} />
                 </CardContent>
               </Card>
 

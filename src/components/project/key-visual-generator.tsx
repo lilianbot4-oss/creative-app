@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import KeyVisualPreview from "@/components/media/key-visual-preview";
 import type { Concept, ConceptAsset } from "@/lib/types";
 import { getPublicStorageUrl } from "@/lib/storage";
 
@@ -141,13 +142,15 @@ export default function KeyVisualGenerator({
   const renderThumb = (asset: ConceptAsset, showActions = true) => {
     const url = getPublicStorageUrl(asset.storage_bucket, asset.storage_path);
     return (
-      <div key={asset.id} className="space-y-2 rounded-xl border border-border/60 p-2">
-        <div className="aspect-square w-full overflow-hidden rounded-lg bg-muted">
-          {url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={url} alt="Key visual" className="h-full w-full object-cover" />
-          ) : null}
-        </div>
+      <div key={asset.id} className="space-y-2">
+        <KeyVisualPreview
+          src={url}
+          alt="Key visual"
+          aspect="thumb"
+          label={asset.is_primary ? "Primary" : undefined}
+          enableLightbox
+          className="p-2"
+        />
         <div className="flex items-center justify-between gap-2 text-xs">
           <Badge variant="secondary">AI Generated</Badge>
           {asset.is_primary ? <Badge>Primary</Badge> : null}

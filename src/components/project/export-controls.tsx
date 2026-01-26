@@ -13,14 +13,14 @@ export default function ExportControls() {
   const [includeFeedback, setIncludeFeedback] = useState(true);
   const [includeAppendix, setIncludeAppendix] = useState(true);
   const [includeProvenance, setIncludeProvenance] = useState(false);
-  const [includeGallery, setIncludeGallery] = useState(false);
+  const [includeGallery, setIncludeGallery] = useState(true);
 
   useEffect(() => {
     setIncludeReferences(searchParams.get("refs") !== "false");
     setIncludeFeedback(searchParams.get("feedback") !== "false");
     setIncludeAppendix(searchParams.get("appendix") !== "false");
     setIncludeProvenance(searchParams.get("provenance") === "true");
-    setIncludeGallery(searchParams.get("gallery") === "true");
+    setIncludeGallery(searchParams.get("gallery") !== "false");
   }, [searchParams]);
 
   const updateParam = (key: string, value: boolean) => {

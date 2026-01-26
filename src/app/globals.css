@@ -191,6 +191,13 @@
   body {
     background: white;
   }
+  .no-print {
+    display: none !important;
+  }
+  [data-slot="dialog-overlay"],
+  [data-slot="dialog-content"] {
+    display: none !important;
+  }
   .print-area {
     padding: 0;
   }

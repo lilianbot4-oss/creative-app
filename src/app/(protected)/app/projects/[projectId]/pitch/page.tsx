@@ -17,6 +17,7 @@ import MarkdownContent from "@/components/markdown/markdown-content";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getPublicStorageUrl } from "@/lib/storage";
 import type { Client, ConceptVariant, Project } from "@/lib/types";
+import KeyVisualPreview from "@/components/media/key-visual-preview";
 
 interface PitchPageProps {
   params: Promise<{ projectId: string }>;
@@ -235,15 +236,16 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
                     </p>
                   ) : null}
                   {primaryVisualByConcept.get(concept.id) ? (
-                    <div className="mt-3 overflow-hidden rounded-xl border border-border/60">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                    <div className="mt-3">
+                      <KeyVisualPreview
                         src={getPublicStorageUrl(
                           primaryVisualByConcept.get(concept.id)!.storage_bucket,
                           primaryVisualByConcept.get(concept.id)!.storage_path
                         )}
-                        alt="Primary key visual"
-                        className="h-48 w-full object-cover"
+                        alt={`Primary key visual for ${concept.title}`}
+                        label="Primary"
+                        aspect="card"
+                        enableLightbox
                       />
                     </div>
                   ) : null}
@@ -335,16 +337,16 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
             <CardHeader>
               <CardTitle>Image gallery</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-3 md:grid-cols-2">
+            <CardContent className="grid grid-cols-2 gap-2 md:grid-cols-4">
               {conceptAssets.map((asset) => (
-                <div key={asset.id} className="overflow-hidden rounded-xl border border-border/60">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={getPublicStorageUrl(asset.storage_bucket, asset.storage_path)}
-                    alt="Generated visual"
-                    className="h-40 w-full object-cover"
-                  />
-                </div>
+                <KeyVisualPreview
+                  key={asset.id}
+                  src={getPublicStorageUrl(asset.storage_bucket, asset.storage_path)}
+                  alt="Generated visual"
+                  aspect="thumb"
+                  enableLightbox
+                  className="p-2"
+                />
               ))}
             </CardContent>
           </Card>

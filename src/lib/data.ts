@@ -194,6 +194,41 @@ export async function listConceptAssetsByProject(projectId: string) {
   return (data ?? []) as ConceptAsset[];
 }
 
+export async function getPrimaryKeyVisualsForProject(projectId: string) {
+  const [concepts, assets] = await Promise.all([
+    listConcepts(projectId),
+    listConceptAssetsByProject(projectId),
+  ]);
+
+  const conceptById = new Map(concepts.map((concept) => [concept.id, concept]));
+  const keyVisuals = assets.filter(
+    (asset) => asset.asset_type === "key_visual" && asset.concept_id
+  );
+  const grouped = new Map<string, ConceptAsset[]>();
+
+  keyVisuals.forEach((asset) => {
+    const conceptId = asset.concept_id as string;
+    const list = grouped.get(conceptId) ?? [];
+    list.push(asset);
+    grouped.set(conceptId, list);
+  });
+
+  return Array.from(grouped.entries()).map(([conceptId, list]) => {
+    const sorted = list.slice().sort((a, b) => (a.created_at > b.created_at ? -1 : 1));
+    const primary = list.find((asset) => asset.is_primary) ?? sorted[0] ?? null;
+    const gallery = primary
+      ? [primary, ...sorted.filter((asset) => asset.id !== primary.id)].slice(0, 4)
+      : sorted.slice(0, 4);
+
+    return {
+      concept_id: conceptId,
+      concept_title: conceptById.get(conceptId)?.title ?? null,
+      primary,
+      gallery,
+    };
+  });
+}
+
 export async function listConceptAssetsByConcept(conceptId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase

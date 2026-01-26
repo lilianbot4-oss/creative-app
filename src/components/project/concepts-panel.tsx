@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import InfoTooltip from "@/components/ui/info-tooltip";
+import KeyVisualPreview from "@/components/media/key-visual-preview";
 import { createConceptAction } from "@/app/(protected)/app/actions";
 import type { Concept, ConceptAsset, ConceptVariant } from "@/lib/types";
 import ConceptDetail from "@/components/project/concept-detail";
@@ -402,12 +403,16 @@ export default function ConceptsPanel({
                       {primaryAsset ? <Badge variant="secondary">Primary</Badge> : null}
                     </div>
                     {primaryUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={primaryUrl}
-                        alt="Primary key visual"
-                        className="h-40 w-full rounded-lg object-cover"
-                      />
+                      <>
+                        <KeyVisualPreview
+                          src={primaryUrl}
+                          alt={`Key visual for ${concept.title}`}
+                          label="Primary"
+                          aspect="card"
+                          enableLightbox
+                        />
+                        <p className="text-[11px] text-muted-foreground">Click image to enlarge.</p>
+                      </>
                     ) : (
                       <p className="text-xs text-muted-foreground">
                         No primary visual yet.
