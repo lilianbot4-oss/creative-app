@@ -83,17 +83,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const { text: content } = await generateText({
+    const { text: aiContent } = await generateText({
       model: getModel(modelId),
       temperature: 0.7,
       system: systemPrompt,
       prompt: userPrompt,
     });
 
-    const content = completion.choices[0]?.message?.content?.trim();
-    if (!content) {
+    if (!aiContent?.trim()) {
       return NextResponse.json(
-        { error: "No content returned from OpenAI" },
+        { error: "No content returned from AI" },
         { status: 500 }
       );
     }
@@ -117,7 +116,7 @@ export async function POST(request: Request) {
         concept_id: script.concept_id,
         variant_id: script.variant_id,
         format: script.format,
-        script_md: content,
+        script_md: aiContent,
         meta: script.meta ?? null,
         version: nextVersion,
         is_primary: false,
