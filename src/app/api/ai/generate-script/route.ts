@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { openai } from "@/lib/openai/client";
+import { generateText } from "ai";
+import { getModel } from "@/lib/ai/client";
 import { generateScriptSchema } from "@/lib/validators";
 import { buildGenerateScriptPrompt } from "@/lib/ai/prompts/generateScript";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
@@ -9,13 +10,6 @@ import { DEFAULT_TEXT_MODEL } from "@/lib/ai/models";
 
 export async function POST(request: Request) {
   try {
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { error: "Missing OPENAI_API_KEY" },
-        { status: 400 }
-      );
-    }
-
     const body = await request.json();
     const parsed = generateScriptSchema.safeParse(body);
     if (!parsed.success) {
@@ -59,24 +53,24 @@ export async function POST(request: Request) {
 
     const concept = parsed.data.conceptId
       ? (
-          await supabase
-            .from("concepts")
-            .select("*")
-            .eq("id", parsed.data.conceptId)
-            .eq("user_id", user.id)
-            .maybeSingle()
-        ).data
+        await supabase
+          .from("concepts")
+          .select("*")
+          .eq("id", parsed.data.conceptId)
+          .eq("user_id", user.id)
+          .maybeSingle()
+      ).data
       : null;
 
     const variant = parsed.data.variantId
       ? (
-          await supabase
-            .from("concept_variants")
-            .select("*")
-            .eq("id", parsed.data.variantId)
-            .eq("user_id", user.id)
-            .maybeSingle()
-        ).data
+        await supabase
+          .from("concept_variants")
+          .select("*")
+          .eq("id", parsed.data.variantId)
+          .eq("user_id", user.id)
+          .maybeSingle()
+      ).data
       : null;
 
     const { systemPrompt, userPrompt } = buildGenerateScriptPrompt({
@@ -87,6 +81,15 @@ export async function POST(request: Request) {
     });
 
     const settings = await getResolvedAISettings(parsed.data.projectId);
+    const modelId = settings.text_model ?? DEFAULT_TEXT_MODEL;
+
+    // Check for appropriate API key
+    if (modelId.startsWith("gpt") && !process.env.OPENAI_API_KEY) {
+      return NextResponse.json({ error: "Missing OPENAI_API_KEY" }, { status: 400 });
+    }
+    if (modelId.startsWith("gemini") && !process.env.GOOGLE_GENERATIVE_AI_API_KEY && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      return NextResponse.json({ error: "Missing Google AI credentials (GOOGLE_GENERATIVE_AI_API_KEY or GOOGLE_APPLICATION_CREDENTIALS)" }, { status: 400 });
+    }
 
     const usage = await enforceUsageLimit(
       supabase,
@@ -101,19 +104,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const completion = await openai.chat.completions.create({
-      model: settings.text_model ?? DEFAULT_TEXT_MODEL,
+    const { text: content } = await generateText({
+      model: getModel(modelId),
       temperature: 0.7,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
+      system: systemPrompt,
+      prompt: userPrompt,
     });
 
-    const content = completion.choices[0]?.message?.content?.trim();
-    if (!content) {
+    if (!content?.trim()) {
       return NextResponse.json(
-        { error: "No content returned from OpenAI" },
+        { error: "No content returned from AI" },
         { status: 500 }
       );
     }

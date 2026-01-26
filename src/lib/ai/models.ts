@@ -47,6 +47,24 @@ export const TEXT_MODEL_PRESETS: ModelInfo[] = [
     capabilities: { text: true, images: false, json: true, tools: true, vision: true },
     recommendedFor: ["Client-facing copy", "High-stakes pitches"],
   },
+  {
+    id: "gemini-2.0-flash",
+    label: "Gemini 2.0 Flash",
+    description: "Next-gen lightning fast model from Google.",
+    speed: "fast",
+    cost: "low",
+    capabilities: { text: true, images: false, json: true, tools: true, vision: true },
+    recommendedFor: ["Fast iterations", "Multimodal analysis"],
+  },
+  {
+    id: "gemini-1.5-pro",
+    label: "Gemini 1.5 Pro",
+    description: "Google's most capable model for complex reasoning.",
+    speed: "medium",
+    cost: "medium",
+    capabilities: { text: true, images: false, json: true, tools: true, vision: true },
+    recommendedFor: ["Strategic planning", "Long-form content"],
+  },
 ];
 
 export const IMAGE_MODEL_PRESETS: ModelInfo[] = [

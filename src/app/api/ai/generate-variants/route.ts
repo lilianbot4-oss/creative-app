@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { openai } from "@/lib/openai/client";
+import { generateText } from "ai";
+import { getModel } from "@/lib/ai/client";
 import { extractJson } from "@/lib/openai/utils";
 import { generateVariantsSchema } from "@/lib/validators";
 import { buildGenerateVariantsPrompt } from "@/lib/ai/prompts/generateVariants";
@@ -10,13 +11,6 @@ import { DEFAULT_TEXT_MODEL } from "@/lib/ai/models";
 
 export async function POST(request: Request) {
   try {
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { error: "Missing OPENAI_API_KEY" },
-        { status: 400 }
-      );
-    }
-
     const body = await request.json();
     const parsed = generateVariantsSchema.safeParse(body);
     if (!parsed.success) {
@@ -60,6 +54,15 @@ export async function POST(request: Request) {
 
     const { systemPrompt, userPrompt } = buildGenerateVariantsPrompt(spec, concept);
     const settings = await getResolvedAISettings(concept.project_id);
+    const modelId = settings.text_model ?? DEFAULT_TEXT_MODEL;
+
+    // Check for appropriate API key
+    if (modelId.startsWith("gpt") && !process.env.OPENAI_API_KEY) {
+      return NextResponse.json({ error: "Missing OPENAI_API_KEY" }, { status: 400 });
+    }
+    if (modelId.startsWith("gemini") && !process.env.GOOGLE_GENERATIVE_AI_API_KEY && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      return NextResponse.json({ error: "Missing Google AI credentials (GOOGLE_GENERATIVE_AI_API_KEY or GOOGLE_APPLICATION_CREDENTIALS)" }, { status: 400 });
+    }
 
     const usage = await enforceUsageLimit(
       supabase,
@@ -74,16 +77,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const completion = await openai.chat.completions.create({
-      model: settings.text_model ?? DEFAULT_TEXT_MODEL,
+    const { text: content } = await generateText({
+      model: getModel(modelId),
       temperature: 0.7,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
+      system: systemPrompt,
+      prompt: userPrompt,
     });
-
-    const content = completion.choices[0]?.message?.content ?? "";
     const json = extractJson<
       Array<{ angle: string; summary?: string; tradeoffs?: string[] }>
     >(content);

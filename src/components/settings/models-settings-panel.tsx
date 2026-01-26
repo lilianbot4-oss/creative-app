@@ -69,9 +69,9 @@ export default function ModelsSettingsPanel({
   return (
     <div className="space-y-6">
       {!aiEnabled ? (
-        <Card className="border-destructive/40 bg-destructive/10">
-          <CardContent className="py-4 text-sm text-destructive">
-            AI Disabled: Add OPENAI_API_KEY to .env.local and restart.
+        <Card className="border-amber-500/40 bg-amber-500/10">
+          <CardContent className="py-4 text-sm text-amber-700 dark:text-amber-400">
+            AI partially configured: Add OPENAI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY to .env.local to enable specific features.
           </CardContent>
         </Card>
       ) : null}
@@ -105,44 +105,92 @@ export default function ModelsSettingsPanel({
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          {TEXT_MODEL_PRESETS.map((model) => {
-            const selected = model.id === textModel;
-            return (
-              <div key={model.id} className="rounded-2xl border border-border/60 bg-background/70 p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="text-base font-semibold">{model.label}</p>
-                    <p className="text-sm text-muted-foreground">{model.description}</p>
+        <CardContent className="space-y-8">
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">OpenAI Models</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              {TEXT_MODEL_PRESETS.filter(m => m.id.startsWith("gpt")).map((model) => {
+                const selected = model.id === textModel;
+                return (
+                  <div key={model.id} className="rounded-2xl border border-border/60 bg-background/70 p-4 transition-all hover:border-primary/20">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-base font-semibold">{model.label}</p>
+                        <p className="text-sm text-muted-foreground">{model.description}</p>
+                      </div>
+                      {selected ? <Badge variant="secondary">Selected</Badge> : null}
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2 text-[10px]">
+                      <Badge variant="outline">Speed: {model.speed}</Badge>
+                      <Badge variant="outline">Cost: {model.cost}</Badge>
+                      {model.capabilities.json ? <Badge variant="outline">JSON</Badge> : null}
+                      {model.capabilities.tools ? <Badge variant="outline">Tools</Badge> : null}
+                      {model.capabilities.vision ? <Badge variant="outline">Vision</Badge> : null}
+                    </div>
+                    <ul className="mt-3 list-disc pl-5 text-[10px] text-muted-foreground">
+                      {model.recommendedFor.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                    <Button
+                      className="mt-4 w-full"
+                      variant={selected ? "secondary" : "default"}
+                      onClick={() => {
+                        setTextModel(model.id);
+                        saveSettings({ text_model: model.id });
+                      }}
+                      disabled={isPending}
+                    >
+                      {selected ? "Selected" : "Select"}
+                    </Button>
                   </div>
-                  {selected ? <Badge variant="secondary">Selected</Badge> : null}
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                  <Badge variant="outline">Speed: {model.speed}</Badge>
-                  <Badge variant="outline">Cost: {model.cost}</Badge>
-                  {model.capabilities.json ? <Badge variant="outline">JSON</Badge> : null}
-                  {model.capabilities.tools ? <Badge variant="outline">Tools</Badge> : null}
-                  {model.capabilities.vision ? <Badge variant="outline">Vision</Badge> : null}
-                </div>
-                <ul className="mt-3 list-disc pl-5 text-xs text-muted-foreground">
-                  {model.recommendedFor.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-                <Button
-                  className="mt-4"
-                  variant={selected ? "secondary" : "default"}
-                  onClick={() => {
-                    setTextModel(model.id);
-                    saveSettings({ text_model: model.id });
-                  }}
-                  disabled={isPending}
-                >
-                  {selected ? "Selected" : "Select"}
-                </Button>
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Google Gemini Models</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              {TEXT_MODEL_PRESETS.filter(m => m.id.startsWith("gemini")).map((model) => {
+                const selected = model.id === textModel;
+                return (
+                  <div key={model.id} className="rounded-2xl border border-border/60 bg-background/70 p-4 transition-all hover:border-primary/20">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-base font-semibold">{model.label}</p>
+                        <p className="text-sm text-muted-foreground">{model.description}</p>
+                      </div>
+                      {selected ? <Badge variant="secondary">Selected</Badge> : null}
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2 text-[10px]">
+                      <Badge variant="outline">Speed: {model.speed}</Badge>
+                      <Badge variant="outline">Cost: {model.cost}</Badge>
+                      <Badge variant="outline">JSON</Badge>
+                      <Badge variant="outline">Tools</Badge>
+                      <Badge variant="outline">Vision</Badge>
+                    </div>
+                    <ul className="mt-3 list-disc pl-5 text-[10px] text-muted-foreground">
+                      {model.recommendedFor.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                    <Button
+                      className="mt-4 w-full"
+                      variant={selected ? "secondary" : "default"}
+                      onClick={() => {
+                        setTextModel(model.id);
+                        saveSettings({ text_model: model.id });
+                      }}
+                      disabled={isPending}
+                    >
+                      {selected ? "Selected" : "Select"}
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </CardContent>
       </Card>
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { openai } from "@/lib/openai/client";
+import { generateText } from "ai";
+import { getModel } from "@/lib/ai/client";
 import { buildPrompt } from "@/lib/openai/promptBuilder";
 import { outputGenerateSchema } from "@/lib/validators";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
@@ -9,13 +10,6 @@ import { DEFAULT_TEXT_MODEL } from "@/lib/ai/models";
 
 export async function POST(request: Request) {
   try {
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { error: "Missing OPENAI_API_KEY" },
-        { status: 400 }
-      );
-    }
-
     const body = await request.json();
     const parsed = outputGenerateSchema.safeParse(body);
     if (!parsed.success) {
@@ -78,36 +72,36 @@ export async function POST(request: Request) {
 
     const references = includeReferences
       ? (
-          await supabase
-            .from("references")
-            .select("url, notes")
-            .eq("project_id", projectId)
-        ).data
+        await supabase
+          .from("references")
+          .select("url, notes")
+          .eq("project_id", projectId)
+      ).data
       : [];
 
     const latestOutput = regenFromFeedback
       ? (
-          await supabase
-            .from("outputs")
-            .select("content_md")
-            .eq("project_id", projectId)
-            .eq("mode", mode)
-            .order("version", { ascending: false })
-            .limit(1)
-            .maybeSingle()
-        ).data?.content_md ?? null
+        await supabase
+          .from("outputs")
+          .select("content_md")
+          .eq("project_id", projectId)
+          .eq("mode", mode)
+          .order("version", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      ).data?.content_md ?? null
       : null;
 
     const latestFeedback = regenFromFeedback
       ? (
-          await supabase
-            .from("feedback")
-            .select("text")
-            .eq("project_id", projectId)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle()
-        ).data?.text ?? null
+        await supabase
+          .from("feedback")
+          .select("text")
+          .eq("project_id", projectId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      ).data?.text ?? null
       : null;
 
     const feedbackToUse = feedbackText?.trim().length
@@ -115,12 +109,21 @@ export async function POST(request: Request) {
       : latestFeedback;
 
     const settings = await getResolvedAISettings(projectId);
+    const modelId = settings.text_model ?? DEFAULT_TEXT_MODEL;
+
+    // Check for appropriate API key
+    if (modelId.startsWith("gpt") && !process.env.OPENAI_API_KEY) {
+      return NextResponse.json({ error: "Missing OPENAI_API_KEY" }, { status: 400 });
+    }
+    if (modelId.startsWith("gemini") && !process.env.GOOGLE_GENERATIVE_AI_API_KEY && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      return NextResponse.json({ error: "Missing Google AI credentials (GOOGLE_GENERATIVE_AI_API_KEY or GOOGLE_APPLICATION_CREDENTIALS)" }, { status: 400 });
+    }
 
     const { systemPrompt, userPrompt } = buildPrompt({
       mode,
       briefText: brief.raw_text,
       parsedSummary: brief.parsed_summary,
-      brandVoice: includeBrandVoice ? project.client?.brand_voice : null,
+      brandVoice: project.client?.brand_voice || null,
       ideaSeed: seedText ?? null,
       references: references ?? [],
       previousOutput: latestOutput,
@@ -142,19 +145,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const completion = await openai.chat.completions.create({
-      model: settings.text_model ?? DEFAULT_TEXT_MODEL,
+    const { text: content } = await generateText({
+      model: getModel(modelId),
       temperature: 0.7,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
+      system: systemPrompt,
+      prompt: userPrompt,
     });
 
-    const content = completion.choices[0]?.message?.content?.trim();
-    if (!content) {
+    if (!content?.trim()) {
       return NextResponse.json(
-        { error: "No content returned from OpenAI" },
+        { error: "No content returned from AI" },
         { status: 500 }
       );
     }
