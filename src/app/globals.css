@@ -124,15 +124,28 @@
     @apply bg-background text-foreground antialiased;
     background-image: radial-gradient(
         1200px 600px at 10% -10%,
-        color-mix(in oklab, var(--secondary) 50%, transparent),
+        color-mix(in oklab, var(--secondary) 25%, transparent),
         transparent
       ),
       radial-gradient(
         900px 500px at 90% 0%,
-        color-mix(in oklab, var(--accent) 45%, transparent),
+        color-mix(in oklab, var(--accent) 30%, transparent),
         transparent
       );
   }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/30 transition-colors;
+  }
+
   h1,
   h2,
   h3,

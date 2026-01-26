@@ -140,19 +140,24 @@ export async function getReferences(projectId: string) {
 
 export async function getClientProjectCounts() {
   const supabase = await createClient();
-  const { count: clientCount, error: clientError } = await supabase
-    .from("clients")
-    .select("id", { count: "exact", head: true });
-  if (clientError) throw clientError;
+  const [
+    { count: clientCount, error: clientError },
+    { count: projectCount, error: projectError },
+    { count: outputCount, error: outputError },
+  ] = await Promise.all([
+    supabase.from("clients").select("id", { count: "exact", head: true }),
+    supabase.from("projects").select("id", { count: "exact", head: true }),
+    supabase.from("outputs").select("id", { count: "exact", head: true }),
+  ]);
 
-  const { count: projectCount, error: projectError } = await supabase
-    .from("projects")
-    .select("id", { count: "exact", head: true });
+  if (clientError) throw clientError;
   if (projectError) throw projectError;
+  if (outputError) throw outputError;
 
   return {
     clientCount: clientCount ?? 0,
     projectCount: projectCount ?? 0,
+    outputCount: outputCount ?? 0,
   };
 }
 

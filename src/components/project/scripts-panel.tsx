@@ -220,7 +220,7 @@ export default function ScriptsPanel({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <CardTitle>Script generator</CardTitle>
-              <InfoTooltip label="Scripts inherit provenance from the concept they were generated from." />
+              <InfoTooltip label="Generate cinematic or social-first scripts. Scripts inherit provenance from the concept they were generated from to maintain logical flow." />
             </div>
             {!aiEnabled ? <Badge variant="destructive">AI Disabled</Badge> : null}
           </div>
@@ -234,7 +234,7 @@ export default function ScriptsPanel({
                   <SelectValue placeholder="Select concept" />
                 </SelectTrigger>
                 <SelectContent>
-              <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {concepts.map((concept) => (
                     <SelectItem key={concept.id} value={concept.id}>
                       {concept.title}
@@ -250,7 +250,7 @@ export default function ScriptsPanel({
                   <SelectValue placeholder="Select variant" />
                 </SelectTrigger>
                 <SelectContent>
-              <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="none">None</SelectItem>
                   {variants.map((variant) => (
                     <SelectItem key={variant.id} value={variant.id}>
                       {variant.angle}

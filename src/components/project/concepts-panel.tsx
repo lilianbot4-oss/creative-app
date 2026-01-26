@@ -231,7 +231,7 @@ export default function ConceptsPanel({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <CardTitle>Concept generation</CardTitle>
-              <InfoTooltip label="Human, AI-assisted, and AI-generated concepts stay labeled for provenance." />
+              <InfoTooltip label="Generate broad creative territories. Human, AI-assisted, and AI-generated concepts stay labeled for provenance." />
             </div>
             {!aiEnabled ? <Badge variant="destructive">AI Disabled</Badge> : null}
           </div>
@@ -389,9 +389,9 @@ export default function ConceptsPanel({
                         <InfoTooltip label="Provenance: how this concept was created." />
                       </div>
                       <div className="flex items-center gap-1">
-                                      <Badge variant="outline">{variants.length} variants</Badge>
-                                      <InfoTooltip label="Variants are different angles or takes on the same core concept." />
-                                    </div>
+                        <Badge variant="outline">{variants.length} variants</Badge>
+                        <InfoTooltip label="Variants are different angles or pivots for this core concept. Useful for exploring various strategic hooks." />
+                      </div>
                     </div>
                   </div>
                 </CardHeader>

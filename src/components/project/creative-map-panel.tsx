@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Upload, FileText, CheckCircle2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -313,25 +314,60 @@ export default function CreativeMapPanel({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <CardTitle>Upload Brief (files processed, not stored)</CardTitle>
-              <InfoTooltip label="Files are parsed in your browser. Only extracted text is saved to the database." />
+              <InfoTooltip label="Upload PDF or PPTX briefs. We extract the text locally to keep your private files secure while enabling AI analysis." />
             </div>
             {!aiEnabled ? <Badge variant="secondary">AI Disabled</Badge> : null}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.pptx"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) handleFileSelected(file);
-              }}
-            />
+          <div className="space-y-4">
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/40 bg-muted/20 py-10 transition-all hover:border-primary/40 hover:bg-muted/40"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Upload size={24} />
+              </div>
+              <p className="mt-4 font-semibold text-foreground">Click to upload or drag and drop</p>
+              <p className="text-xs text-muted-foreground mt-1">PDF or PPTX (max. 10MB)</p>
+              <Input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.pptx"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) handleFileSelected(file);
+                }}
+              />
+            </div>
+
             {uploadFile ? (
-              <div className="text-xs text-muted-foreground">
-                Selected: {uploadFile.name} ({Math.round(uploadFile.size / 1024)} KB)
+              <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-[10px]">
+                    {uploadFile.name.split('.').pop()?.toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{uploadFile.name}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {Math.round(uploadFile.size / 1024)} KB
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 rounded-full"
+                  onClick={() => {
+                    setUploadFile(null);
+                    setUploadText("");
+                    setUploadMeta(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
+                >
+                  <X size={16} />
+                </Button>
               </div>
             ) : null}
           </div>
@@ -415,7 +451,7 @@ export default function CreativeMapPanel({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <CardTitle>Raw brief</CardTitle>
-              <InfoTooltip label="Paste or edit a raw brief here. This is separate from uploaded files." />
+              <InfoTooltip label="Directly edit or paste your campaign brief. This serves as the primary source of truth for all AI-generated content." />
             </div>
             {!aiEnabled ? <Badge variant="destructive">AI Disabled</Badge> : null}
           </div>

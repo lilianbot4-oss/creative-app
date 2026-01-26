@@ -207,7 +207,7 @@ export default function PitchBuilderPanel({
                     onChange={(event) => setIncludeAppendix(event.target.checked)}
                   />
                   Include supporting materials
-                  <InfoTooltip label="Additional outputs like alternate scripts, variant concepts, and production notes." />
+                  <InfoTooltip label="Append alternate scripts, variant concepts, and production notes to the end of your pitch pack for deeper context." />
                 </label>
                 <label className="flex items-center gap-2">
                   <input
