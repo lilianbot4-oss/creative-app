@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { generateText } from "ai";
-import { getModel } from "@/lib/ai/client";
+import {
+  getModel,
+  hasGoogleAIConfig,
+  hasOpenAIConfig,
+  GOOGLE_CREDENTIALS_ERROR,
+} from "@/lib/ai/client";
 import { buildPrompt } from "@/lib/openai/promptBuilder";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
 import { getResolvedAISettings } from "@/lib/ai/settings";
@@ -84,11 +89,11 @@ export async function POST(request: Request) {
     const modelId = settings.text_model ?? DEFAULT_TEXT_MODEL;
 
     // Check for appropriate API key
-    if (modelId.startsWith("gpt") && !process.env.OPENAI_API_KEY) {
+    if (modelId.startsWith("gpt") && !hasOpenAIConfig()) {
       return NextResponse.json({ error: "Missing OPENAI_API_KEY" }, { status: 400 });
     }
-    if (modelId.startsWith("gemini") && !process.env.GOOGLE_GENERATIVE_AI_API_KEY && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-      return NextResponse.json({ error: "Missing Google AI credentials (GOOGLE_GENERATIVE_AI_API_KEY or GOOGLE_APPLICATION_CREDENTIALS)" }, { status: 400 });
+    if (modelId.startsWith("gemini") && !hasGoogleAIConfig()) {
+      return NextResponse.json({ error: GOOGLE_CREDENTIALS_ERROR }, { status: 400 });
     }
 
     const { count: primaryCount } = await supabase
