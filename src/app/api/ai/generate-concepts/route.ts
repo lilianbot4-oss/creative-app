@@ -80,6 +80,12 @@ export async function POST(request: Request) {
     );
 
     if (!usage.allowed) {
+      if (usage.reason === "error") {
+        return NextResponse.json(
+          { error: "AI usage tracking unavailable. Try again later." },
+          { status: 503 }
+        );
+      }
       return NextResponse.json(
         { error: "Daily AI request limit reached. Try again tomorrow." },
         { status: 429 }

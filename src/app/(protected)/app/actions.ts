@@ -57,6 +57,11 @@ export async function updateClientAction(input: {
   const parsed = updateSchema.safeParse(input);
   if (!parsed.success) throw new Error("Invalid client data");
   const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
   const { error } = await supabase
     .from("clients")
     .update({
@@ -64,7 +69,8 @@ export async function updateClientAction(input: {
       industry: input.industry ?? null,
       notes: input.notes ?? null,
     })
-    .eq("id", input.id);
+    .eq("id", input.id)
+    .eq("user_id", user.id);
   if (error) throw error;
   revalidatePath("/app/clients");
   revalidatePath(`/app/clients/${input.id}`);
@@ -72,7 +78,16 @@ export async function updateClientAction(input: {
 
 export async function deleteClientAction(clientId: string) {
   const supabase = await createClient();
-  const { error } = await supabase.from("clients").delete().eq("id", clientId);
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
+  const { error } = await supabase
+    .from("clients")
+    .delete()
+    .eq("id", clientId)
+    .eq("user_id", user.id);
   if (error) throw error;
   revalidatePath("/app/clients");
   revalidatePath("/app");
@@ -83,11 +98,17 @@ export async function updateBrandVoiceAction(input: {
   brandVoice: Record<string, string | null | undefined>;
 }) {
   const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
   const parsed = brandVoiceSchema.parse(input.brandVoice);
   const { error } = await supabase
     .from("clients")
     .update({ brand_voice: parsed })
-    .eq("id", input.clientId);
+    .eq("id", input.clientId)
+    .eq("user_id", user.id);
   if (error) throw error;
   revalidatePath(`/app/clients/${input.clientId}`);
 }
@@ -132,10 +153,16 @@ export async function updateProjectStatusAction(input: {
   status: (typeof PROJECT_STATUSES)[number];
 }) {
   const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
   const { error } = await supabase
     .from("projects")
     .update({ status: input.status })
-    .eq("id", input.projectId);
+    .eq("id", input.projectId)
+    .eq("user_id", user.id);
   if (error) throw error;
   revalidatePath(`/app/projects/${input.projectId}`);
   revalidatePath("/app/projects");
@@ -143,7 +170,16 @@ export async function updateProjectStatusAction(input: {
 
 export async function deleteProjectAction(projectId: string) {
   const supabase = await createClient();
-  const { error } = await supabase.from("projects").delete().eq("id", projectId);
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
+  const { error } = await supabase
+    .from("projects")
+    .delete()
+    .eq("id", projectId)
+    .eq("user_id", user.id);
   if (error) throw error;
   revalidatePath("/app/projects");
   revalidatePath("/app");
@@ -210,17 +246,24 @@ export async function setPrimaryOutputAction(input: {
   outputId: string;
 }) {
   const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
   const { error: resetError } = await supabase
     .from("outputs")
     .update({ is_primary: false })
-    .eq("project_id", input.projectId);
+    .eq("project_id", input.projectId)
+    .eq("user_id", user.id);
   if (resetError) throw resetError;
 
   const { error } = await supabase
     .from("outputs")
     .update({ is_primary: true })
     .eq("id", input.outputId)
-    .eq("project_id", input.projectId);
+    .eq("project_id", input.projectId)
+    .eq("user_id", user.id);
   if (error) throw error;
 
   revalidatePath(`/app/projects/${input.projectId}`);
@@ -570,18 +613,25 @@ export async function setPrimaryScriptAction(input: {
   format: (typeof SCRIPT_FORMATS)[number];
 }) {
   const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
   const { error: resetError } = await supabase
     .from("scripts")
     .update({ is_primary: false })
     .eq("project_id", input.projectId)
-    .eq("format", input.format);
+    .eq("format", input.format)
+    .eq("user_id", user.id);
   if (resetError) throw resetError;
 
   const { error } = await supabase
     .from("scripts")
     .update({ is_primary: true })
     .eq("id", input.scriptId)
-    .eq("project_id", input.projectId);
+    .eq("project_id", input.projectId)
+    .eq("user_id", user.id);
   if (error) throw error;
 
   revalidatePath(`/app/projects/${input.projectId}`);
