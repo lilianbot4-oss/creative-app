@@ -16,7 +16,14 @@ export default async function OnboardingPage() {
           Let&apos;s set up your first client and generate a one-pager in minutes.
         </p>
       </div>
-      <OnboardingWizard aiEnabled={Boolean(process.env.OPENAI_API_KEY)} />
+      <OnboardingWizard
+        aiEnabled={Boolean(
+          process.env.OPENAI_API_KEY ||
+            process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+            process.env.GOOGLE_CLOUD_PROJECT ||
+            process.env.GEMINI_API_KEY
+        )}
+      />
     </div>
   );
 }

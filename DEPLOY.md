@@ -2,7 +2,7 @@
 
 ## Prerequisites
 - Supabase project created and schema applied.
-- Storage bucket `references` created and set to public.
+- Storage buckets `references` and `assets` created and set to public.
 - Environment variables ready.
 
 ## Required environment variables
@@ -10,6 +10,7 @@
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `OPENAI_API_KEY` (optional if AI features enabled)
+- `GEMINI_API_KEY` (required for Google Imagen image generation)
 - `OPENAI_MODEL` (optional, defaults to gpt-4o-mini)
 
 ## Vercel steps
@@ -25,3 +26,5 @@
 ## Notes
 - This app uses Supabase RLS; confirm policies are applied.
 - If AI is disabled, the UI will show an "AI Disabled" badge and guard calls.
+- Image uploads are capped at 25MB; the server enforces this limit for generated images.
+- Google Imagen outputs include a SynthID watermark.

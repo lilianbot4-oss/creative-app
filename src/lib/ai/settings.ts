@@ -2,7 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import {
   DEFAULT_REASONING_MODE,
   DEFAULT_TEXT_MODEL,
-  resolveImageModel,
+  DEFAULT_IMAGE_PROVIDER,
+  ImageProvider,
+  isImageProvider,
+  resolveImageSelection,
   resolveTextModel,
   validateModelId,
   TEXT_MODEL_PRESETS,
@@ -13,6 +16,7 @@ export type AISettings = {
   user_id: string;
   text_model: string;
   image_model: string | null;
+  image_provider: ImageProvider;
   reasoning_mode: "fast" | "balanced" | "premium";
   created_at: string;
   updated_at: string;
@@ -24,6 +28,7 @@ export type ProjectAISettings = {
   project_id: string;
   text_model: string | null;
   image_model: string | null;
+  image_provider: ImageProvider | null;
   reasoning_mode: "fast" | "balanced" | "premium" | null;
   created_at: string;
 };
@@ -31,6 +36,7 @@ export type ProjectAISettings = {
 const DEFAULT_SETTINGS = {
   text_model: DEFAULT_TEXT_MODEL,
   image_model: null,
+  image_provider: DEFAULT_IMAGE_PROVIDER,
   reasoning_mode: DEFAULT_REASONING_MODE as AISettings["reasoning_mode"],
 };
 
@@ -49,7 +55,13 @@ export async function getUserAISettings() {
     .maybeSingle();
 
   if (error) throw error;
-  if (data) return data as AISettings;
+  if (data) {
+    const settings = data as AISettings;
+    return {
+      ...settings,
+      image_provider: (settings.image_provider ?? DEFAULT_IMAGE_PROVIDER) as ImageProvider,
+    };
+  }
 
   const { data: created, error: insertError } = await supabase
     .from("ai_settings")
@@ -57,6 +69,7 @@ export async function getUserAISettings() {
       user_id: user.id,
       text_model: DEFAULT_SETTINGS.text_model,
       image_model: DEFAULT_SETTINGS.image_model,
+      image_provider: DEFAULT_SETTINGS.image_provider,
       reasoning_mode: DEFAULT_SETTINGS.reasoning_mode,
     })
     .select()
@@ -69,6 +82,7 @@ export async function getUserAISettings() {
 export async function updateUserAISettings(input: {
   text_model?: string | null;
   image_model?: string | null;
+  image_provider?: string | null;
   reasoning_mode?: string | null;
 }) {
   const supabase = await createClient();
@@ -84,9 +98,16 @@ export async function updateUserAISettings(input: {
     ? (input.text_model as string)
     : current.text_model ?? DEFAULT_TEXT_MODEL;
 
-  const nextImage = resolveImageModel(
-    input.image_model ?? current.image_model ?? null
-  );
+  const requestedProvider = isImageProvider(input.image_provider)
+    ? input.image_provider
+    : current.image_provider ?? DEFAULT_IMAGE_PROVIDER;
+
+  const resolvedImage = resolveImageSelection({
+    selectedId: input.image_model ?? current.image_model ?? null,
+    selectedProvider: requestedProvider,
+  });
+  const nextImage = resolvedImage.image_model;
+  const nextImageProvider = resolvedImage.image_provider;
 
   const nextReasoning =
     (input.reasoning_mode as AISettings["reasoning_mode"]) ??
@@ -98,6 +119,7 @@ export async function updateUserAISettings(input: {
     .update({
       text_model: nextText,
       image_model: nextImage,
+      image_provider: nextImageProvider,
       reasoning_mode: nextReasoning,
     })
     .eq("user_id", user.id)
@@ -109,7 +131,8 @@ export async function updateUserAISettings(input: {
     settings: data as AISettings,
     reverted:
       (input.text_model && input.text_model !== nextText) ||
-      (input.image_model && input.image_model !== nextImage),
+      (input.image_model && input.image_model !== nextImage) ||
+      (input.image_provider && input.image_provider !== nextImageProvider),
   };
 }
 
@@ -117,6 +140,7 @@ export async function getResolvedAISettings(projectId?: string | null) {
   const base = await getUserAISettings();
   let textModel = base.text_model;
   let imageModel = base.image_model;
+  let imageProvider = base.image_provider ?? DEFAULT_IMAGE_PROVIDER;
   let reasoningMode = base.reasoning_mode;
 
   if (projectId) {
@@ -131,14 +155,21 @@ export async function getResolvedAISettings(projectId?: string | null) {
       const override = data as ProjectAISettings;
       textModel = override.text_model ?? textModel;
       imageModel = override.image_model ?? imageModel;
+      imageProvider = override.image_provider ?? imageProvider;
       reasoningMode = override.reasoning_mode ?? reasoningMode;
     }
   }
 
+  const resolvedImage = resolveImageSelection({
+    selectedId: imageModel,
+    selectedProvider: imageProvider,
+  });
+
   return {
     ...base,
     text_model: resolveTextModel({ reasoningMode, selectedId: textModel }),
-    image_model: resolveImageModel(imageModel),
+    image_model: resolvedImage.image_model,
+    image_provider: resolvedImage.image_provider,
     reasoning_mode: reasoningMode,
   } as AISettings;
 }

@@ -11,7 +11,6 @@ import {
   FolderKanban,
   Sparkles,
   ArrowRight,
-  Plus,
   HelpCircle
 } from "lucide-react";
 
@@ -35,7 +34,7 @@ export default async function DashboardPage() {
         <div className="space-y-1">
           <h2 className="text-3xl font-bold tracking-tight">Welcome back</h2>
           <p className="text-muted-foreground">
-            Here's what's happening with your creative campaigns.
+            Here&apos;s what&apos;s happening with your creative campaigns.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">

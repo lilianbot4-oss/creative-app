@@ -16,8 +16,15 @@ export type ModelInfo = {
   recommendedFor: string[];
 };
 
+export type ImageProvider = "openai" | "google";
+
+export type ImageModelInfo = ModelInfo & {
+  provider: ImageProvider;
+};
+
 export const DEFAULT_TEXT_MODEL = "gpt-4.1-mini";
 export const DEFAULT_REASONING_MODE = "balanced";
+export const DEFAULT_IMAGE_PROVIDER: ImageProvider = "openai";
 
 export const TEXT_MODEL_PRESETS: ModelInfo[] = [
   {
@@ -67,7 +74,7 @@ export const TEXT_MODEL_PRESETS: ModelInfo[] = [
   },
 ];
 
-export const IMAGE_MODEL_PRESETS: ModelInfo[] = [
+export const IMAGE_MODEL_PRESETS: ImageModelInfo[] = [
   {
     id: "gpt-image-1",
     label: "GPT Image 1",
@@ -76,6 +83,7 @@ export const IMAGE_MODEL_PRESETS: ModelInfo[] = [
     cost: "medium",
     capabilities: { text: false, images: true },
     recommendedFor: ["Moodboards", "Storyboard frames"],
+    provider: "openai",
   },
   {
     id: "dall-e-3",
@@ -85,6 +93,17 @@ export const IMAGE_MODEL_PRESETS: ModelInfo[] = [
     cost: "high",
     capabilities: { text: false, images: true },
     recommendedFor: ["Key visuals", "High fidelity comps"],
+    provider: "openai",
+  },
+  {
+    id: "imagen-4.0-generate-001",
+    label: "Google Imagen 4",
+    description: "High-fidelity imagery for polished key visuals and hero art.",
+    speed: "slow",
+    cost: "high",
+    capabilities: { text: false, images: true },
+    recommendedFor: ["High fidelity comps", "Key visuals", "Product shots"],
+    provider: "google",
   },
 ];
 
@@ -98,8 +117,18 @@ export function getTextModelInfo(id?: string | null) {
   return TEXT_MODEL_PRESETS.find((item) => item.id === id) ?? null;
 }
 
-export function getImageModelInfo(id?: string | null) {
+export function getImageModelInfo(
+  id?: string | null,
+  provider?: ImageProvider | null
+) {
   if (!id) return null;
+  if (provider) {
+    return (
+      IMAGE_MODEL_PRESETS.find(
+        (item) => item.id === id && item.provider === provider
+      ) ?? null
+    );
+  }
   return IMAGE_MODEL_PRESETS.find((item) => item.id === id) ?? null;
 }
 
@@ -122,9 +151,27 @@ export function resolveTextModel(options: {
   }
 }
 
-export function resolveImageModel(selectedId?: string | null) {
-  if (validateModelId(IMAGE_MODEL_PRESETS, selectedId)) {
-    return selectedId as string;
+export function resolveImageSelection(options: {
+  selectedId?: string | null;
+  selectedProvider?: ImageProvider | null;
+}) {
+  const info = options.selectedId
+    ? IMAGE_MODEL_PRESETS.find((item) => item.id === options.selectedId)
+    : null;
+
+  if (!info) {
+    return {
+      image_model: null,
+      image_provider: options.selectedProvider ?? DEFAULT_IMAGE_PROVIDER,
+    };
   }
-  return null;
+
+  return {
+    image_model: info.id,
+    image_provider: info.provider,
+  };
+}
+
+export function isImageProvider(value?: string | null): value is ImageProvider {
+  return value === "openai" || value === "google";
 }

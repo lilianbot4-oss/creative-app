@@ -104,7 +104,12 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       scripts={scripts}
       storyboardsByScript={storyboardsByScript}
       aiSettings={aiSettings}
-      aiEnabled={Boolean(process.env.OPENAI_API_KEY)}
+      aiEnabled={Boolean(
+        process.env.OPENAI_API_KEY ||
+          process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+          process.env.GOOGLE_CLOUD_PROJECT ||
+          process.env.GEMINI_API_KEY
+      )}
     />
   );
 }

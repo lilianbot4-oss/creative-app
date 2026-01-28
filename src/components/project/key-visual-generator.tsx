@@ -40,11 +40,15 @@ export default function KeyVisualGenerator({
   const [pendingAssets, setPendingAssets] = useState<ConceptAsset[]>([]);
 
   const defaultPrompt = useMemo(() => {
+    const integration =
+      concept.product_integration ??
+      (concept as { doordash_integration?: string | null }).doordash_integration ??
+      null;
     const parts = [
       concept.title,
       concept.one_liner,
       concept.cast_archetypes?.join(", "),
-      concept.doordash_integration,
+      integration,
     ].filter(Boolean);
     return parts.join(" · ");
   }, [concept]);
@@ -61,7 +65,7 @@ export default function KeyVisualGenerator({
 
   const handleGenerate = async () => {
     if (!aiEnabled) {
-      toast.error("AI disabled: add OPENAI_API_KEY to .env.local and restart.");
+      toast.error("AI disabled: add OPENAI_API_KEY or GEMINI_API_KEY to .env.local and restart.");
       return;
     }
     if (!imageModel) {
@@ -89,8 +93,20 @@ export default function KeyVisualGenerator({
         toast.error("AI disabled: add OPENAI_API_KEY to .env.local and restart.");
         return;
       }
+      if (response.status === 400 && data?.error === "Missing GEMINI_API_KEY") {
+        toast.error("AI disabled: add GEMINI_API_KEY to .env.local and restart.");
+        return;
+      }
       if (response.status === 400 && data?.error === "Image model not configured") {
         toast.error("Image model not configured. Select one in AI Models.");
+        return;
+      }
+      if (response.status === 413) {
+        toast.error(data?.error || "Generated image exceeds the 25MB limit.");
+        return;
+      }
+      if (response.status === 502) {
+        toast.error(data?.error || "Image generation failed.");
         return;
       }
       if (response.status === 429) {

@@ -88,7 +88,7 @@ export const conceptSchema = z.object({
   title: z.string().min(1, "Concept title is required"),
   one_liner: z.string().optional().nullable(),
   thesis: z.string().optional().nullable(),
-  doordash_integration: z.string().optional().nullable(),
+  product_integration: z.string().optional().nullable(),
   scalability: z.string().optional().nullable(),
   origin_type: z.enum(["human", "ai_assisted", "ai_generated"]).optional(),
   seed_text: z.string().optional().nullable(),

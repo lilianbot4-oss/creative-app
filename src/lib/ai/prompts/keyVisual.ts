@@ -13,13 +13,16 @@ type KeyVisualInput = {
 
 export function buildKeyVisualPrompt(input: KeyVisualInput) {
   const guardrails = buildGuardrails(input.creativeSpec ?? null);
+  const legacyIntegration =
+    (input.concept as { doordash_integration?: string | null } | null)
+      ?.doordash_integration ?? null;
+  const integration =
+    input.concept?.product_integration ?? legacyIntegration ?? null;
   const conceptBlock = input.concept
     ? [
         `Concept: ${input.concept.title}`,
         input.concept.one_liner ? `One-liner: ${input.concept.one_liner}` : null,
-        input.concept.doordash_integration
-          ? `Product integration: ${input.concept.doordash_integration}`
-          : null,
+        integration ? `Product integration: ${integration}` : null,
       ]
         .filter(Boolean)
         .join("\n")

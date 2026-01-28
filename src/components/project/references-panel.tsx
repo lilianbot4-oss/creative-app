@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import type { Reference } from "@/lib/types";
+import { getImageModelInfo } from "@/lib/ai/models";
 
 const urlSchema = z.object({
   url: z.string().url("Enter a valid URL"),
@@ -125,10 +126,11 @@ export default function ReferencesPanel({
 
   const supabase = createClient();
   const imageEnabled = Boolean(imageModel) && aiEnabled;
+  const imageModelInfo = getImageModelInfo(imageModel);
 
   const handleGenerateMoodboard = async () => {
     if (!aiEnabled) {
-      toast.error("AI disabled: add OPENAI_API_KEY to .env.local and restart.");
+      toast.error("AI disabled: add OPENAI_API_KEY or GEMINI_API_KEY to .env.local and restart.");
       return;
     }
     if (!imageModel) {
@@ -158,8 +160,20 @@ export default function ReferencesPanel({
         toast.error("AI disabled: add OPENAI_API_KEY to .env.local and restart.");
         return;
       }
+      if (response.status === 400 && data?.error === "Missing GEMINI_API_KEY") {
+        toast.error("AI disabled: add GEMINI_API_KEY to .env.local and restart.");
+        return;
+      }
       if (response.status === 400 && data?.error === "Image model not configured") {
         toast.error("Image model not configured. Choose one in AI Models settings.");
+        return;
+      }
+      if (response.status === 413) {
+        toast.error(data?.error || "Generated image exceeds the 25MB limit.");
+        return;
+      }
+      if (response.status === 502) {
+        toast.error(data?.error || "Image generation failed.");
         return;
       }
       if (response.status === 429) {
@@ -206,7 +220,7 @@ export default function ReferencesPanel({
               </Button>
               <p className="text-xs text-muted-foreground">
                 {imageEnabled
-                  ? `Using ${imageModel}.`
+                  ? `Using ${imageModelInfo?.label ?? imageModel}.`
                   : "Image model not configured in AI Models settings."}
               </p>
             </div>

@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { extractTextFromPdf, extractTextFromPptx } from "@/lib/briefParsing/clientExtract";
 
 const sampleBrief =
-  "Launch a social-first delivery campaign for Valentine’s Day. Objective: make DoorDash feel like the ultimate romantic wingman. Must avoid cheesy clichés. Deliverables: TikTok series, influencer briefs, OOH teaser, in-app promo.";
+  "Launch a social-first campaign for a food delivery brand for Valentine's Day. Objective: make the brand feel like the ultimate romantic wingman. Must avoid cheesy cliches. Deliverables: TikTok series, influencer briefs, OOH teaser, in-app promo.";
 
 function parseLines(text: string) {
   return text

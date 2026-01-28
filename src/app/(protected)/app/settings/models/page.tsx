@@ -3,7 +3,12 @@ import ModelsSettingsPanel from "@/components/settings/models-settings-panel";
 
 export default async function ModelsSettingsPage() {
   const settings = await getUserAISettings();
-  const aiEnabled = Boolean(process.env.OPENAI_API_KEY);
+  const aiEnabled = Boolean(
+    process.env.OPENAI_API_KEY ||
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+      process.env.GOOGLE_CLOUD_PROJECT ||
+      process.env.GEMINI_API_KEY
+  );
 
   return (
     <div className="space-y-6">

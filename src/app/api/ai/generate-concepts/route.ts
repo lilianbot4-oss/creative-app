@@ -98,7 +98,9 @@ export async function POST(request: Request) {
         one_liner?: string;
         thesis?: string;
         share_triggers?: string[];
+        product_integration?: string;
         doordash_integration?: string;
+        doorDash_integration?: string;
         cast_archetypes?: string[];
         beats?: Array<Record<string, unknown>>;
         risks?: Array<{ risk: string; mitigation?: string }>;
@@ -117,24 +119,28 @@ export async function POST(request: Request) {
     const limited = json.slice(0, desiredCount);
     const payload = limited
       .filter((item) => item.title)
-      .map((item) => ({
+      .map((item) => {
+        const productIntegration =
+          item.product_integration ??
+          item.doordash_integration ??
+          item.doorDash_integration ??
+          null;
+        return {
         user_id: user.id,
         project_id: parsed.data.projectId,
         title: item.title,
         one_liner: item.one_liner ?? null,
         thesis: item.thesis ?? null,
         share_triggers: item.share_triggers ?? null,
-        doordash_integration:
-          item.doordash_integration ??
-          (item as { doorDash_integration?: string }).doorDash_integration ??
-          null,
+        product_integration: productIntegration,
         cast_archetypes: item.cast_archetypes ?? null,
         beats: item.beats ?? null,
         risks: item.risks ?? null,
         scalability: item.scalability ?? null,
         origin_type: originType,
         seed_text: parsed.data.seedText ?? null,
-      }));
+        };
+      });
 
     if (payload.length === 0) {
       return NextResponse.json(

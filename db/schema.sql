@@ -158,14 +158,46 @@ create policy "References are deletable by owner" on public."references"
   for delete using (auth.uid() = user_id);
 
 -- Storage policies for references bucket
+drop policy if exists "Public read references" on storage.objects;
 create policy "Public read references" on storage.objects
   for select using (bucket_id = 'references');
 
+drop policy if exists "Users can upload references" on storage.objects;
 create policy "Users can upload references" on storage.objects
-  for insert with check (bucket_id = 'references' and auth.role() = 'authenticated');
+  for insert with check (
+    bucket_id = 'references' and
+    auth.role() = 'authenticated' and
+    name like auth.uid() || '/%'
+  );
 
+drop policy if exists "Users can delete own references" on storage.objects;
 create policy "Users can delete own references" on storage.objects
-  for delete using (bucket_id = 'references' and owner = auth.uid());
+  for delete using (
+    bucket_id = 'references' and
+    owner = auth.uid() and
+    name like auth.uid() || '/%'
+  );
+
+-- Storage policies for assets bucket
+drop policy if exists "Public read assets" on storage.objects;
+create policy "Public read assets" on storage.objects
+  for select using (bucket_id = 'assets');
+
+drop policy if exists "Users can upload assets" on storage.objects;
+create policy "Users can upload assets" on storage.objects
+  for insert with check (
+    bucket_id = 'assets' and
+    auth.role() = 'authenticated' and
+    name like auth.uid() || '/%'
+  );
+
+drop policy if exists "Users can delete own assets" on storage.objects;
+create policy "Users can delete own assets" on storage.objects
+  for delete using (
+    bucket_id = 'assets' and
+    owner = auth.uid() and
+    name like auth.uid() || '/%'
+  );
 
 -- PHASE 1+ UPDATES
 -- Run the statements below in the Supabase SQL Editor to apply the latest schema updates.
@@ -236,6 +268,8 @@ create table if not exists public.concepts (
   one_liner text,
   thesis text,
   share_triggers jsonb,
+  product_integration text,
+  -- Deprecated: keep doordash_integration for backwards compatibility.
   doordash_integration text,
   cast_archetypes jsonb,
   beats jsonb,
@@ -245,6 +279,7 @@ create table if not exists public.concepts (
 );
 
 alter table public.concepts add column if not exists doordash_integration text;
+alter table public.concepts add column if not exists product_integration text;
 
 create index if not exists concepts_project_idx on public.concepts (project_id);
 
@@ -364,6 +399,7 @@ create table if not exists public.ai_settings (
   user_id uuid references auth.users (id) on delete cascade not null unique,
   text_model text not null default 'gpt-4.1-mini',
   image_model text,
+  image_provider text not null default 'openai',
   reasoning_mode text not null default 'balanced',
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -375,9 +411,15 @@ create table if not exists public.project_ai_settings (
   project_id uuid references public.projects (id) on delete cascade not null,
   text_model text,
   image_model text,
+  image_provider text,
   reasoning_mode text,
   created_at timestamptz default now()
 );
+
+alter table public.ai_settings
+  add column if not exists image_provider text not null default 'openai';
+alter table public.project_ai_settings
+  add column if not exists image_provider text;
 
 create unique index if not exists project_ai_settings_project_unique on public.project_ai_settings (project_id);
 
@@ -530,3 +572,26 @@ create policy "Concept assets are updatable by owner" on public.concept_assets
   for update using (auth.uid() = user_id);
 create policy "Concept assets are deletable by owner" on public.concept_assets
   for delete using (auth.uid() = user_id);
+
+-- PHASE 6+ CONCEPT INTEGRATION RENAME
+-- Run the statements below in the Supabase SQL Editor to apply the latest schema updates.
+-- All statements are intended to be safe to run on an existing database (idempotent).
+
+-- Deprecated: keep doordash_integration for backwards compatibility.
+alter table public.concepts
+  add column if not exists product_integration text;
+
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'concepts'
+      and column_name = 'doordash_integration'
+  ) then
+    update public.concepts
+    set product_integration = coalesce(product_integration, doordash_integration)
+    where doordash_integration is not null;
+  end if;
+end $$;

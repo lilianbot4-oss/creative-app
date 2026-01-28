@@ -369,12 +369,18 @@ export async function createConceptAction(input: {
   title: string;
   one_liner?: string | null;
   thesis?: string | null;
+  product_integration?: string | null;
   doordash_integration?: string | null;
   scalability?: string | null;
   origin_type?: "human" | "ai_assisted" | "ai_generated";
   seed_text?: string | null;
 }) {
-  const parsed = conceptSchema.parse(input);
+  const normalized = {
+    ...input,
+    product_integration:
+      input.product_integration ?? input.doordash_integration ?? null,
+  };
+  const parsed = conceptSchema.parse(normalized);
   const supabase = await createClient();
   const {
     data: { user },
@@ -390,7 +396,7 @@ export async function createConceptAction(input: {
       title: parsed.title,
       one_liner: parsed.one_liner ?? null,
       thesis: parsed.thesis ?? null,
-      doordash_integration: parsed.doordash_integration ?? null,
+      product_integration: parsed.product_integration ?? null,
       scalability: parsed.scalability ?? null,
       origin_type: parsed.origin_type ?? "human",
       seed_text: parsed.seed_text ?? null,

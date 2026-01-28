@@ -163,7 +163,7 @@ export default function ConceptsPanel({
         title: title.trim(),
         one_liner: oneLiner.trim() || null,
         thesis: thesis.trim() || null,
-        doordash_integration: integration.trim() || null,
+        product_integration: integration.trim() || null,
         scalability: scalability.trim() || null,
         origin_type: "human",
       });
@@ -369,6 +369,10 @@ export default function ConceptsPanel({
             const variants = variantsByConcept[concept.id] ?? [];
             const origin = concept.origin_type ?? "human";
             const assets = assetsByConcept[concept.id] ?? [];
+            const integration =
+              concept.product_integration ??
+              (concept as { doordash_integration?: string | null }).doordash_integration ??
+              null;
             const primaryAsset = assets.find(
               (asset) => asset.is_primary && asset.asset_type === "key_visual"
             );
@@ -437,10 +441,10 @@ export default function ConceptsPanel({
                       </ul>
                     </div>
                   ) : null}
-                  {concept.doordash_integration ? (
+                  {integration ? (
                     <div>
                       <p className="font-medium">Product integration</p>
-                      <p className="text-muted-foreground">{concept.doordash_integration}</p>
+                      <p className="text-muted-foreground">{integration}</p>
                     </div>
                   ) : null}
                   {concept.scalability ? (

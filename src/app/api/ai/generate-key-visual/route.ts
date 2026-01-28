@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { GoogleGenAI, type GenerateImagesConfig } from "@google/genai";
 import { openai } from "@/lib/openai/client";
 import { createClient } from "@/lib/supabase/server";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
 import { getResolvedAISettings } from "@/lib/ai/settings";
 import { buildKeyVisualPrompt } from "@/lib/ai/prompts/keyVisual";
+import { DEFAULT_IMAGE_PROVIDER, ImageProvider } from "@/lib/ai/models";
 
 export const runtime = "nodejs";
+
+const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
 
 const requestSchema = z.object({
   projectId: z.string().uuid(),
@@ -19,6 +23,15 @@ const requestSchema = z.object({
   n: z.number().min(1).max(4).optional().default(4),
   size: z.enum(["1024x1024", "1536x1024", "1024x1536"]).optional().default("1024x1024"),
 });
+
+function mapSizeToAspect(size: "1024x1024" | "1536x1024" | "1024x1536") {
+  switch (size) {
+    case "1024x1024":
+      return "1:1";
+    default:
+      return null;
+  }
+}
 
 async function bufferFromImage(item: { b64_json?: string | null; url?: string | null }) {
   if (item.b64_json) {
@@ -59,12 +72,34 @@ async function generateOneImage(options: {
   }
 }
 
+async function generateGoogleImage(options: {
+  model: string;
+  prompt: string;
+  aspectRatio?: string | null;
+}) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("Missing GEMINI_API_KEY");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+  const config: GenerateImagesConfig = { numberOfImages: 1 };
+  if (options.aspectRatio) {
+    config.aspectRatio = options.aspectRatio;
+  }
+
+  const result = await ai.models.generateImages({
+    model: options.model,
+    prompt: options.prompt,
+    config,
+  });
+
+  const imageBytes = result.generatedImages?.[0]?.image?.imageBytes;
+  return imageBytes ? Buffer.from(imageBytes, "base64") : null;
+}
+
 export async function POST(request: Request) {
   try {
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json({ error: "Missing OPENAI_API_KEY" }, { status: 400 });
-    }
-
     const body = await request.json();
     const parsed = requestSchema.safeParse(body);
     if (!parsed.success) {
@@ -95,6 +130,14 @@ export async function POST(request: Request) {
     const settings = await getResolvedAISettings(projectId);
     if (!settings.image_model) {
       return NextResponse.json({ error: "Image model not configured" }, { status: 400 });
+    }
+
+    const provider = (settings.image_provider ?? DEFAULT_IMAGE_PROVIDER) as ImageProvider;
+    if (provider === "google" && !process.env.GEMINI_API_KEY) {
+      return NextResponse.json({ error: "Missing GEMINI_API_KEY" }, { status: 400 });
+    }
+    if (provider === "openai" && !process.env.OPENAI_API_KEY) {
+      return NextResponse.json({ error: "Missing OPENAI_API_KEY" }, { status: 400 });
     }
 
     const [{ data: creativeSpec }, concept, variant, script] = await Promise.all([
@@ -161,26 +204,50 @@ export async function POST(request: Request) {
       created_at: string;
     }> = [];
     const errors: Array<{ index: number; error: string }> = [];
+    let sizeLimitExceeded = false;
+    let googleGenerationFailed = false;
     const requestCount = Math.min(n, 4);
+    const aspectRatio = mapSizeToAspect(size);
 
     for (let i = 0; i < requestCount; i += 1) {
       let buffer: Buffer | null = null;
       try {
-        const completion = await generateOneImage({
-          model: settings.image_model,
-          prompt,
-          size,
-        });
-        const image = completion.data?.[0];
-        buffer = image ? await bufferFromImage(image) : null;
+        if (provider === "google") {
+          buffer = await generateGoogleImage({
+            model: settings.image_model,
+            prompt,
+            aspectRatio,
+          });
+          if (!buffer) {
+            googleGenerationFailed = true;
+          }
+        } else {
+          const completion = await generateOneImage({
+            model: settings.image_model,
+            prompt,
+            size,
+          });
+          const image = completion.data?.[0];
+          buffer = image ? await bufferFromImage(image) : null;
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Image generation failed";
+        if (provider === "google") {
+          googleGenerationFailed = true;
+          console.error("Google image generation failed", error);
+        }
         errors.push({ index: i, error: message });
         continue;
       }
 
       if (!buffer) {
         errors.push({ index: i, error: "No image returned" });
+        continue;
+      }
+
+      if (buffer.byteLength > MAX_IMAGE_BYTES) {
+        sizeLimitExceeded = true;
+        errors.push({ index: i, error: "Generated image exceeds 25MB limit." });
         continue;
       }
 
@@ -232,13 +299,28 @@ export async function POST(request: Request) {
     }
 
     if (createdAssets.length === 0) {
+      const errorMessage = errors[0]?.error ?? "No images returned";
+      if (sizeLimitExceeded) {
+        return NextResponse.json({ error: errorMessage, errors }, { status: 413 });
+      }
+      if (provider === "google" && googleGenerationFailed) {
+        return NextResponse.json(
+          { error: "Image generation failed", details: errorMessage, errors },
+          { status: 502 }
+        );
+      }
       return NextResponse.json(
-        { error: errors[0]?.error ?? "No images returned", errors },
+        { error: errorMessage, errors },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ assets: createdAssets, errors });
+    return NextResponse.json({
+      assets: createdAssets,
+      errors,
+      provider,
+      model: settings.image_model,
+    });
   } catch (error) {
     console.error("Key visual generation failed", error);
     const message = error instanceof Error ? error.message : "Unexpected error";

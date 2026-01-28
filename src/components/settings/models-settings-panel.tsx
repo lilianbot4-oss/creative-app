@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { updateAISettingsAction } from "@/app/(protected)/app/settings/models/actions";
 import {
   DEFAULT_REASONING_MODE,
+  DEFAULT_IMAGE_PROVIDER,
   DEFAULT_TEXT_MODEL,
   IMAGE_MODEL_PRESETS,
   TEXT_MODEL_PRESETS,
@@ -38,11 +39,15 @@ export default function ModelsSettingsPanel({
   const [isPending, startTransition] = useTransition();
 
   const activeTextInfo = useMemo(() => getTextModelInfo(textModel), [textModel]);
-  const activeImageInfo = useMemo(() => getImageModelInfo(imageModel), [imageModel]);
+  const activeImageInfo = useMemo(
+    () => getImageModelInfo(imageModel),
+    [imageModel]
+  );
 
   const saveSettings = (next: {
     text_model?: string | null;
     image_model?: string | null;
+    image_provider?: string | null;
     reasoning_mode?: string | null;
   }) => {
     startTransition(async () => {
@@ -70,10 +75,10 @@ export default function ModelsSettingsPanel({
     <div className="space-y-6">
       {!aiEnabled ? (
         <Card className="border-amber-500/40 bg-amber-500/10">
-          <CardContent className="py-4 text-sm text-amber-700 dark:text-amber-400">
-            AI partially configured: Add OPENAI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY to .env.local to enable specific features.
-          </CardContent>
-        </Card>
+        <CardContent className="py-4 text-sm text-amber-700 dark:text-amber-400">
+            AI partially configured: Add OPENAI_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY, or GEMINI_API_KEY to .env.local to enable specific features.
+        </CardContent>
+      </Card>
       ) : null}
 
       <Card>
@@ -203,39 +208,68 @@ export default function ModelsSettingsPanel({
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          {IMAGE_MODEL_PRESETS.map((model) => {
-            const selected = model.id === imageModel;
+        <CardContent className="space-y-6">
+          {[
+            {
+              id: "openai",
+              label: "OpenAI Image Models",
+              models: IMAGE_MODEL_PRESETS.filter((model) => model.provider === "openai"),
+            },
+            {
+              id: "google",
+              label: "Google Image Models",
+              models: IMAGE_MODEL_PRESETS.filter((model) => model.provider === "google"),
+            },
+          ].map((group) => {
+            if (group.models.length === 0) return null;
             return (
-              <div key={model.id} className="rounded-2xl border border-border/60 bg-background/70 p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="text-base font-semibold">{model.label}</p>
-                    <p className="text-sm text-muted-foreground">{model.description}</p>
-                  </div>
-                  {selected ? <Badge variant="secondary">Selected</Badge> : null}
+              <div key={group.id} className="space-y-4">
+                <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+                  {group.label}
+                </h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {group.models.map((model) => {
+                    const selected = model.id === imageModel;
+                    return (
+                      <div
+                        key={model.id}
+                        className="rounded-2xl border border-border/60 bg-background/70 p-4"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <p className="text-base font-semibold">{model.label}</p>
+                            <p className="text-sm text-muted-foreground">{model.description}</p>
+                          </div>
+                          {selected ? <Badge variant="secondary">Selected</Badge> : null}
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                          <Badge variant="outline">Speed: {model.speed}</Badge>
+                          <Badge variant="outline">Cost: {model.cost}</Badge>
+                          <Badge variant="outline">Images</Badge>
+                        </div>
+                        <ul className="mt-3 list-disc pl-5 text-xs text-muted-foreground">
+                          {model.recommendedFor.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                        <Button
+                          className="mt-4"
+                          variant={selected ? "secondary" : "default"}
+                          onClick={() => {
+                            setImageModel(model.id);
+                            saveSettings({
+                              image_model: model.id,
+                              image_provider: model.provider ?? DEFAULT_IMAGE_PROVIDER,
+                            });
+                          }}
+                          disabled={isPending}
+                        >
+                          {selected ? "Selected" : "Select"}
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                  <Badge variant="outline">Speed: {model.speed}</Badge>
-                  <Badge variant="outline">Cost: {model.cost}</Badge>
-                  <Badge variant="outline">Images</Badge>
-                </div>
-                <ul className="mt-3 list-disc pl-5 text-xs text-muted-foreground">
-                  {model.recommendedFor.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-                <Button
-                  className="mt-4"
-                  variant={selected ? "secondary" : "default"}
-                  onClick={() => {
-                    setImageModel(model.id);
-                    saveSettings({ image_model: model.id });
-                  }}
-                  disabled={isPending}
-                >
-                  {selected ? "Selected" : "Select"}
-                </Button>
               </div>
             );
           })}

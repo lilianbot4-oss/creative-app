@@ -105,7 +105,7 @@ export type Concept = {
   one_liner: string | null;
   thesis: string | null;
   share_triggers: string[] | null;
-  doordash_integration: string | null;
+  product_integration: string | null;
   cast_archetypes: string[] | null;
   beats: Array<Record<string, unknown>> | null;
   risks: Array<{ risk: string; mitigation?: string | null }> | null;
