@@ -27,7 +27,7 @@ export async function enforceUsageLimit(
   const currentTokens = data?.tokens_estimate ?? 0;
 
   if (currentRequests >= DAILY_REQUEST_LIMIT) {
-    return { allowed: false, remaining: 0 };
+    return { allowed: false, remaining: 0, reason: "limit" as const };
   }
 
   const nextRequests = currentRequests + 1;
@@ -45,9 +45,14 @@ export async function enforceUsageLimit(
 
   if (upsertError) {
     console.error("Usage upsert failed", upsertError);
+    return { allowed: false, remaining: 0, reason: "error" as const };
   }
 
-  return { allowed: true, remaining: DAILY_REQUEST_LIMIT - nextRequests };
+  return {
+    allowed: true,
+    remaining: DAILY_REQUEST_LIMIT - nextRequests,
+    reason: "ok" as const,
+  };
 }
 
 export function estimateTokensFromText(text: string) {
