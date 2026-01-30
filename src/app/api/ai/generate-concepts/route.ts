@@ -145,6 +145,7 @@ export async function POST(request: Request) {
         scalability: item.scalability ?? null,
         origin_type: originType,
         seed_text: parsed.data.seedText ?? null,
+        parent_concept_id: parsed.data.parentConceptId ?? null,
         };
       });
 

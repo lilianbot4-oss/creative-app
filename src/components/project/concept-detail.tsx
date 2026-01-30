@@ -17,10 +17,12 @@ export default function ConceptDetail({
   concept,
   variants,
   assets,
+  allConcepts,
 }: {
   concept: Concept;
   variants: ConceptVariant[];
   assets: ConceptAsset[];
+  allConcepts?: Concept[];
 }) {
   const [open, setOpen] = useState(false);
   const keyVisuals = assets.filter((asset) => asset.asset_type === "key_visual");
@@ -40,6 +42,14 @@ export default function ConceptDetail({
         <div className="space-y-3 text-sm">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary">{ORIGIN_LABELS[concept.origin_type ?? "human"]}</Badge>
+            {concept.parent_concept_id && allConcepts ? (() => {
+              const parent = allConcepts.find((c) => c.id === concept.parent_concept_id);
+              return parent ? (
+                <span className="text-xs text-muted-foreground">
+                  Iterated from: <span className="font-medium">{parent.title}</span>
+                </span>
+              ) : null;
+            })() : null}
             {concept.seed_text ? (
               <span className="text-xs text-muted-foreground">Seed: {concept.seed_text}</span>
             ) : null}

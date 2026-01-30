@@ -14,6 +14,7 @@ import KeyVisualPreview from "@/components/media/key-visual-preview";
 import { createConceptAction } from "@/app/(protected)/app/actions";
 import type { Concept, ConceptAsset, ConceptVariant } from "@/lib/types";
 import ConceptDetail from "@/components/project/concept-detail";
+import ImportIdeasDialog from "@/components/project/import-ideas-dialog";
 import KeyVisualGenerator from "@/components/project/key-visual-generator";
 import { getPublicStorageUrl } from "@/lib/storage";
 
@@ -54,6 +55,7 @@ export default function ConceptsPanel({
   const [seedText, setSeedText] = useState("");
   const [originFilter, setOriginFilter] = useState<"all" | "human" | "ai_assisted" | "ai_generated">("all");
   const [humanFirst, setHumanFirst] = useState(false);
+  const [iteratingFromId, setIteratingFromId] = useState<string | null>(null);
 
   const sortedConcepts = useMemo(() => {
     let list = concepts.slice();
@@ -121,10 +123,12 @@ export default function ConceptsPanel({
       const combinedSeed = seedTitle.trim()
         ? `${seedTitle.trim()}: ${seedText.trim()}`
         : seedText.trim();
+      const body: Record<string, unknown> = { projectId, seedText: combinedSeed, count: 1 };
+      if (iteratingFromId) body.parentConceptId = iteratingFromId;
       const response = await fetch("/api/ai/generate-concepts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, seedText: combinedSeed, count: 1 }),
+        body: JSON.stringify(body),
       });
       const data = await response.json();
       if (response.status === 400 && data?.error === "Missing OPENAI_API_KEY") {
@@ -142,6 +146,7 @@ export default function ConceptsPanel({
       toast.success("Concept expanded from seed");
       setSeedText("");
       setSeedTitle("");
+      setIteratingFromId(null);
       setAssistOpen(false);
       router.refresh();
     } catch {
@@ -241,7 +246,7 @@ export default function ConceptsPanel({
           <Button onClick={handleGenerate} disabled={!aiEnabled || generating}>
             {generating ? "Generating..." : "Generate 6 Concepts"}
           </Button>
-          <Dialog open={assistOpen} onOpenChange={setAssistOpen}>
+          <Dialog open={assistOpen} onOpenChange={(next) => { setAssistOpen(next); if (!next) setIteratingFromId(null); }}>
             <DialogTrigger asChild>
               <Button variant="secondary" disabled={!aiEnabled || generating}>
                 Develop my idea with AI
@@ -275,6 +280,7 @@ export default function ConceptsPanel({
               </div>
             </DialogContent>
           </Dialog>
+          <ImportIdeasDialog projectId={projectId} aiEnabled={aiEnabled} />
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button variant="secondary">New concept (human)</Button>
@@ -453,8 +459,35 @@ export default function ConceptsPanel({
                       <p className="text-muted-foreground">{concept.scalability}</p>
                     </div>
                   ) : null}
+                  {concept.parent_concept_id ? (() => {
+                    const parent = concepts.find((c) => c.id === concept.parent_concept_id);
+                    return parent ? (
+                      <p className="text-xs text-muted-foreground">
+                        Iterated from: <span className="font-medium">{parent.title}</span>
+                      </p>
+                    ) : null;
+                  })() : null}
+                  {(() => {
+                    const iterationCount = concepts.filter((c) => c.parent_concept_id === concept.id).length;
+                    return iterationCount > 0 ? (
+                      <Badge variant="outline">{iterationCount} iteration{iterationCount === 1 ? "" : "s"}</Badge>
+                    ) : null;
+                  })()}
                   <div className="flex flex-wrap gap-2">
-                    <ConceptDetail concept={concept} variants={variants} assets={assets} />
+                    <ConceptDetail concept={concept} variants={variants} assets={assets} allConcepts={concepts} />
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={!aiEnabled || generating}
+                      onClick={() => {
+                        setSeedTitle(concept.title);
+                        setSeedText(concept.thesis || concept.seed_text || "");
+                        setIteratingFromId(concept.id);
+                        setAssistOpen(true);
+                      }}
+                    >
+                      Iterate with AI
+                    </Button>
                     <Button size="sm" variant="secondary" onClick={() => handleGenerateVariants(concept.id)}>
                       Generate variants
                     </Button>

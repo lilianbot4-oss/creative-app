@@ -113,6 +113,7 @@ export type Concept = {
   origin_type?: "human" | "ai_assisted" | "ai_generated";
   ai_generation_id?: string | null;
   seed_text?: string | null;
+  parent_concept_id?: string | null;
   last_edited_by_user_id?: string | null;
   updated_at?: string;
   created_at: string;

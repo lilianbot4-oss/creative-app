@@ -595,3 +595,12 @@ begin
     where doordash_integration is not null;
   end if;
 end $$;
+
+-- PHASE 7+ IMPORT IDEAS + LINEAGE TRACKING
+-- Run the statements below in the Supabase SQL Editor to apply the latest schema updates.
+-- Adds parent_concept_id for tracking lineage between imported ideas and AI iterations.
+
+alter table public.concepts
+  add column if not exists parent_concept_id uuid references public.concepts (id) on delete set null;
+
+create index if not exists concepts_parent_concept_idx on public.concepts (parent_concept_id);

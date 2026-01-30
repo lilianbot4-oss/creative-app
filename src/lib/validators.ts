@@ -92,6 +92,7 @@ export const conceptSchema = z.object({
   scalability: z.string().optional().nullable(),
   origin_type: z.enum(["human", "ai_assisted", "ai_generated"]).optional(),
   seed_text: z.string().optional().nullable(),
+  parent_concept_id: z.string().uuid().optional().nullable(),
 });
 
 export const conceptVariantSchema = z.object({
@@ -104,6 +105,28 @@ export const generateConceptsSchema = z.object({
   projectId: z.string().uuid(),
   seedText: z.string().optional().nullable(),
   count: z.number().int().min(1).max(10).optional(),
+  parentConceptId: z.string().uuid().optional().nullable(),
+});
+
+export const parseImportIdeasSchema = z.object({
+  projectId: z.string().uuid(),
+  rawText: z.string().min(1, "Text is required"),
+});
+
+export const batchCreateConceptsSchema = z.object({
+  project_id: z.string().uuid(),
+  concepts: z
+    .array(
+      z.object({
+        title: z.string().min(1),
+        thesis: z.string().optional().nullable(),
+        seed_text: z.string().optional().nullable(),
+        origin_type: z.enum(["human", "ai_assisted", "ai_generated"]).optional(),
+        parent_concept_id: z.string().uuid().optional().nullable(),
+      })
+    )
+    .min(1)
+    .max(50),
 });
 
 export const generateVariantsSchema = z.object({

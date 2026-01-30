@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
 import {
+  batchCreateConceptsSchema,
   brandVoiceSchema,
   briefSchema,
   clientSchema,
@@ -451,6 +452,45 @@ export async function createConceptAction(input: {
   if (!concept) throw new Error("Failed to create concept");
   revalidatePath(`/app/projects/${parsed.project_id}`);
   return concept;
+}
+
+export async function batchCreateConceptsAction(input: {
+  project_id: string;
+  concepts: Array<{
+    title: string;
+    thesis?: string | null;
+    seed_text?: string | null;
+    origin_type?: "human" | "ai_assisted" | "ai_generated";
+    parent_concept_id?: string | null;
+  }>;
+}) {
+  const parsed = batchCreateConceptsSchema.parse(input);
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
+
+  const payload = parsed.concepts.map((concept) => ({
+    user_id: user.id,
+    project_id: parsed.project_id,
+    title: concept.title,
+    thesis: concept.thesis ?? null,
+    seed_text: concept.seed_text ?? null,
+    origin_type: concept.origin_type ?? "human",
+    parent_concept_id: concept.parent_concept_id ?? null,
+  }));
+
+  const { data: concepts, error } = await supabase
+    .from("concepts")
+    .insert(payload)
+    .select();
+
+  if (error) throw error;
+  if (!concepts) throw new Error("Failed to create concepts");
+  revalidatePath(`/app/projects/${parsed.project_id}`);
+  return concepts;
 }
 
 export async function saveBriefUploadAction(input: {
