@@ -138,7 +138,7 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
   return (
     <div className="space-y-6">
       <div className="no-print">
-        <h2 className="text-2xl font-semibold">Client pitch pack</h2>
+        <h2 className="text-2xl font-semibold">Client presentation</h2>
         <p className="text-sm text-muted-foreground">
           Use this view to export a polished, client-ready deck.
         </p>
@@ -148,7 +148,7 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
       <div className="print-area space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Campaign Pitch Pack</CardTitle>
+            <CardTitle>Client Presentation</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p>
@@ -168,7 +168,7 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
 
         <Card>
           <CardHeader>
-            <CardTitle>Creative map</CardTitle>
+            <CardTitle>Project setup</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {creativeSpec ? (
@@ -199,7 +199,7 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
                 ) : null}
               </div>
             ) : (
-              <p className="text-muted-foreground">No creative map yet.</p>
+              <p className="text-muted-foreground">No project setup yet.</p>
             )}
           </CardContent>
         </Card>
@@ -207,7 +207,7 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
         {creativeSpec?.parsed_json ? (
           <Card>
             <CardHeader>
-              <CardTitle>Content system notes</CardTitle>
+              <CardTitle>Additional notes</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <p className="text-muted-foreground">
@@ -221,18 +221,18 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
 
         <Card>
           <CardHeader>
-            <CardTitle>Top concepts</CardTitle>
+            <CardTitle>Top ideas</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {selectedConcepts.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No concepts yet.</p>
+              <p className="text-sm text-muted-foreground">No ideas yet.</p>
             ) : (
               selectedConcepts.map((concept) => (
                 <div key={concept.id} className="rounded-xl border border-border/60 p-4 text-sm">
                   <p className="text-base font-semibold">{concept.title}</p>
                   {includeProvenance ? (
                     <p className="text-xs text-muted-foreground">
-                      Provenance: {concept.origin_type ?? "human"}
+                      Origin: {concept.origin_type ?? "human"}
                     </p>
                   ) : null}
                   {primaryVisualByConcept.get(concept.id) ? (
@@ -242,7 +242,7 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
                           primaryVisualByConcept.get(concept.id)!.storage_bucket,
                           primaryVisualByConcept.get(concept.id)!.storage_path
                         )}
-                        alt={`Primary key visual for ${concept.title}`}
+                        alt={`Main image for ${concept.title}`}
                         label="Primary"
                         aspect="card"
                         enableLightbox
@@ -259,7 +259,7 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
                   ) : null}
                   {concept.scalability ? (
                     <p>
-                      <strong>Scalability:</strong> {concept.scalability}
+                      <strong>Growth potential:</strong> {concept.scalability}
                     </p>
                   ) : null}
                 </div>
@@ -284,7 +284,7 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
 
         <Card>
           <CardHeader>
-            <CardTitle>Primary script</CardTitle>
+            <CardTitle>Main script</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {!primaryScript ? (
@@ -296,7 +296,7 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
                 </h3>
                 {includeProvenance ? (
                   <p className="text-xs text-muted-foreground">
-                    Provenance: {primaryScript.origin_type ?? "human"}
+                    Origin: {primaryScript.origin_type ?? "human"}
                   </p>
                 ) : null}
                 <div className="rounded-2xl border border-border/60 bg-background/70 p-4">
@@ -355,7 +355,7 @@ export default async function PitchPage({ params, searchParams }: PitchPageProps
         {includeAppendix && appendixOutputs.length > 0 ? (
           <Card>
             <CardHeader>
-              <CardTitle>Appendix outputs</CardTitle>
+              <CardTitle>Additional results</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {appendixOutputs.map((output) => (

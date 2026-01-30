@@ -74,8 +74,8 @@ export default function CreativeMapSnapshot({ snapshot, title }: CreativeMapSnap
   if (isEmpty) {
     return (
       <div className="rounded-2xl border border-dashed border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-        <p className="font-medium text-foreground">No creative map yet.</p>
-        <p>Parse a brief or generate the creative map to see a snapshot here.</p>
+        <p className="font-medium text-foreground">No project setup yet.</p>
+        <p>Parse your project details to see a summary here.</p>
       </div>
     );
   }
@@ -200,7 +200,7 @@ export default function CreativeMapSnapshot({ snapshot, title }: CreativeMapSnap
       </div>
 
       <div className="space-y-3">
-        <SectionTitle>Content System Notes</SectionTitle>
+        <SectionTitle>Additional Notes</SectionTitle>
         <div className="rounded-2xl border border-border/60 bg-muted/20 p-4 text-sm text-foreground">
           {contentNotes ? contentNotes : <EmptyText />}
         </div>

@@ -202,7 +202,7 @@ export default function CreativeMapPanel({
 
   const handleSave = async () => {
     if (!rawBriefText.trim()) {
-      toast.error("Raw brief is required.");
+      toast.error("Original text is required.");
       return;
     }
     setSaving(true);
@@ -226,11 +226,11 @@ export default function CreativeMapPanel({
         });
       }
 
-      toast.success("Creative map saved");
+      toast.success("Project setup saved");
       router.refresh();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to save creative map");
+      toast.error("Failed to save project setup");
     } finally {
       setSaving(false);
     }
@@ -266,7 +266,7 @@ export default function CreativeMapPanel({
         return;
       }
       if (!response.ok) {
-        toast.error(data?.error || "Failed to parse creative map");
+        toast.error(data?.error || "Failed to parse project setup");
         return;
       }
 
@@ -287,7 +287,7 @@ export default function CreativeMapPanel({
         );
       }
 
-      toast.success("Creative map updated");
+      toast.success("Project setup updated");
       if (rawBriefText.trim() && rawBriefText.trim() !== (brief?.raw_text ?? "").trim()) {
         await createBriefAction({
           project_id: projectId,
@@ -296,7 +296,7 @@ export default function CreativeMapPanel({
       }
       router.refresh();
     } catch {
-      toast.error("Failed to parse creative map");
+      toast.error("Failed to parse project setup");
     } finally {
       setParsing(false);
     }
@@ -306,14 +306,14 @@ export default function CreativeMapPanel({
     <div className="space-y-6">
       <div className="rounded-2xl border border-border/60 bg-muted/40 p-4 text-sm">
         <p className="font-medium">Recommended next step</p>
-        <p className="text-muted-foreground">Parse the Creative Map to unlock concept and script generation.</p>
+        <p className="text-muted-foreground">Parse the project setup to unlock idea and script generation.</p>
       </div>
 
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <CardTitle>Upload Brief (files processed, not stored)</CardTitle>
+              <CardTitle>Upload document (files processed, not stored)</CardTitle>
               <InfoTooltip label="Upload PDF or PPTX briefs. We extract the text locally to keep your private files secure while enabling AI analysis." />
             </div>
             {!aiEnabled ? <Badge variant="secondary">AI Disabled</Badge> : null}
@@ -450,8 +450,8 @@ export default function CreativeMapPanel({
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <CardTitle>Raw brief</CardTitle>
-              <InfoTooltip label="Directly edit or paste your campaign brief. This serves as the primary source of truth for all AI-generated content." />
+              <CardTitle>Original text</CardTitle>
+              <InfoTooltip label="Directly edit or paste your project details. This serves as the primary source of truth for all AI-generated content." />
             </div>
             {!aiEnabled ? <Badge variant="destructive">AI Disabled</Badge> : null}
           </div>
@@ -461,18 +461,18 @@ export default function CreativeMapPanel({
             rows={6}
             value={rawBriefText}
             onChange={(event) => setRawBriefText(event.target.value)}
-            placeholder="Paste the full creative brief here..."
+            placeholder="Paste your project details here..."
           />
           <div className="flex flex-wrap gap-2">
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Saving..." : "Save creative map"}
+              {saving ? "Saving..." : "Save project setup"}
             </Button>
             <Button
               variant="secondary"
               onClick={handleParse}
               disabled={parsing || !aiEnabled}
             >
-              {parsing ? "Analyzing..." : "Extract key details from brief"}
+              {parsing ? "Analyzing..." : "Extract key details"}
             </Button>
             <Button
               type="button"
@@ -509,7 +509,7 @@ export default function CreativeMapPanel({
               <Input value={keyMessage} onChange={(event) => setKeyMessage(event.target.value)} />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Content system notes</label>
+              <label className="text-sm font-medium">Additional notes</label>
               <Textarea
                 rows={3}
                 value={contentSystemNotes}

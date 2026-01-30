@@ -23,13 +23,13 @@ export const GENERATION_MODES = [
 export type GenerationMode = (typeof GENERATION_MODES)[number];
 
 export const GENERATION_MODE_LABELS: Record<GenerationMode, string> = {
-  expand: "Expand",
-  alternatives: "Alternatives",
+  expand: "Full Breakdown",
+  alternatives: "Alternative Directions",
   virality: "Virality",
-  pitch_outline: "Pitch Outline",
-  ugc_scripts: "UGC Scripts",
+  pitch_outline: "Presentation Outline",
+  ugc_scripts: "Creator Scripts",
   storyboard: "Storyboard",
-  one_pager: "One Pager",
+  one_pager: "Summary",
   press_release: "Press Release",
   faq: "FAQ",
 };
@@ -46,9 +46,9 @@ export const SCRIPT_FORMATS = [
 export type ScriptFormat = (typeof SCRIPT_FORMATS)[number];
 
 export const SCRIPT_FORMAT_LABELS: Record<ScriptFormat, string> = {
-  launch_30: "Launch 30s",
-  launch_60: "Launch 60s",
-  ugc_15: "UGC 15s",
+  launch_30: "Launch Video (30s)",
+  launch_60: "Launch Video (60s)",
+  ugc_15: "Creator Video (15s)",
   influencer_brief: "Influencer Brief",
   hooks_captions: "Hooks + Captions",
   punchlines_alt_endings: "Punchlines + Alt Endings",

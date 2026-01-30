@@ -421,7 +421,7 @@ export default function ScriptsPanel({
                     {primaryScript?.id === latest.id ? (
                       <div className="flex items-center gap-1">
                         <Badge variant="secondary">Primary</Badge>
-                        <InfoTooltip label="Primary scripts are used in exports and pitch packs." />
+                        <InfoTooltip label="Main scripts are used in exports and presentations." />
                       </div>
                     ) : (
                       <Button size="sm" variant="secondary" onClick={() => handleSetPrimary(latest)}>
@@ -437,7 +437,7 @@ export default function ScriptsPanel({
                     <Badge variant="secondary">
                       {ORIGIN_LABELS[latest.origin_type ?? "human"]}
                     </Badge>
-                    <InfoTooltip label="Provenance: how this script was created." />
+                    <InfoTooltip label="Origin: how this script was created." />
                   </div>
                   {latest.seed_text ? <span>Seed: {latest.seed_text}</span> : null}
                 </div>
@@ -463,7 +463,7 @@ export default function ScriptsPanel({
                                 <Badge variant="secondary">
                                   {ORIGIN_LABELS[item.origin_type ?? "human"]}
                                 </Badge>
-                                <InfoTooltip label="Provenance: how this script was created." />
+                                <InfoTooltip label="Origin: how this script was created." />
                               </div>
                               {item.seed_text ? <span>Seed: {item.seed_text}</span> : null}
                             </div>

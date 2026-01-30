@@ -175,7 +175,7 @@ export default function PitchBuilderPanel({
         <CardContent className="space-y-4 text-sm">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <p className="font-medium">Creative map summary</p>
+              <p className="font-medium">Project setup summary</p>
               {creativeSpec ? (
                 <div className="rounded-xl border border-border/60 bg-background/70 p-3">
                   <p><strong>Audience:</strong> {creativeSpec.audience || "-"}</p>
@@ -186,11 +186,11 @@ export default function PitchBuilderPanel({
                   <p><strong>Storyboards:</strong> {storyboardCount}</p>
                 </div>
               ) : (
-                <p className="text-muted-foreground">No creative map yet.</p>
+                <p className="text-muted-foreground">No project setup yet.</p>
               )}
             </div>
             <div className="space-y-2">
-              <p className="font-medium">Pitch pack options</p>
+              <p className="font-medium">Presentation options</p>
               <div className="space-y-2">
                 <label className="flex items-center gap-2">
                   <input
@@ -207,7 +207,7 @@ export default function PitchBuilderPanel({
                     onChange={(event) => setIncludeAppendix(event.target.checked)}
                   />
                   Include supporting materials
-                  <InfoTooltip label="Append alternate scripts, variant concepts, and production notes to the end of your pitch pack for deeper context." />
+                  <InfoTooltip label="Append alternate scripts, variant ideas, and production notes to the end of your presentation for deeper context." />
                 </label>
                 <label className="flex items-center gap-2">
                   <input
@@ -254,7 +254,7 @@ export default function PitchBuilderPanel({
         <CardContent className="space-y-3">
           {concepts.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No concepts yet. Generate concepts to build a pitch pack.
+              No ideas yet. Generate ideas to build a presentation.
             </p>
           ) : (
             <div className="grid gap-2 md:grid-cols-2">
@@ -294,10 +294,10 @@ export default function PitchBuilderPanel({
           </div>
           <div className="flex flex-wrap gap-2">
             <Button asChild>
-              <Link href={pitchUrl}>Open pitch pack</Link>
+              <Link href={pitchUrl}>Open presentation</Link>
             </Button>
             <Button variant="secondary" onClick={runPipeline} disabled={!aiEnabled || !!runningStep}>
-              {runningStep ? `Running ${runningStep}...` : "Generate pitch pack"}
+              {runningStep ? `Running ${runningStep}...` : "Generate presentation"}
             </Button>
           </div>
         </CardContent>

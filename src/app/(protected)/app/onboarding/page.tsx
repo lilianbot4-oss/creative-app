@@ -11,9 +11,9 @@ export default async function OnboardingPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold">Welcome to Creative Campaign Copilot</h2>
+        <h2 className="text-2xl font-semibold">Welcome to Creative Copilot</h2>
         <p className="text-sm text-muted-foreground">
-          Let&apos;s set up your first client and generate a one-pager in minutes.
+          Let&apos;s set up your first client and generate a summary in minutes.
         </p>
       </div>
       <OnboardingWizard

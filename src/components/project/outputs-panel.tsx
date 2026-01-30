@@ -75,7 +75,7 @@ export default function OutputsPanel({
                 {primaryOutput?.id === latest.id ? (
                   <div className="flex items-center gap-1">
                     <Badge variant="secondary">Primary</Badge>
-                    <InfoTooltip label="Primary outputs are your 'final' versions. They are prioritized in client exports and pitch packs." />
+                    <InfoTooltip label="Main results are your 'final' versions. They are prioritized in client exports and presentations." />
                   </div>
                 ) : primaryOutput ? (
                   <Badge variant="outline">Primary v{primaryOutput.version}</Badge>

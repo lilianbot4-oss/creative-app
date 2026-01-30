@@ -203,7 +203,7 @@ export default function OnboardingWizard({ aiEnabled }: { aiEnabled: boolean }) 
         {step === 2 ? (
           <form className="space-y-4" onSubmit={briefForm.handleSubmit(handleBriefSubmit)}>
             <div className="space-y-2">
-              <Label>Paste your brief</Label>
+              <Label>Paste your project details</Label>
               <Textarea rows={6} {...briefForm.register("raw_text")} />
             </div>
             <div className="flex flex-wrap gap-2">

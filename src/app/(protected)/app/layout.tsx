@@ -21,9 +21,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <div className="flex min-h-screen flex-col">
         <header className="no-print flex items-center justify-between border-b border-border/60 bg-background/80 px-6 py-4 backdrop-blur">
           <div>
-            <h1 className="text-lg font-semibold">Creative Campaign Copilot</h1>
+            <h1 className="text-lg font-semibold">Creative Copilot</h1>
             <p className="text-xs text-muted-foreground">
-              Organize briefs, generate pitches, ship campaigns.
+              Organize projects, generate content, build presentations.
             </p>
           </div>
         </header>

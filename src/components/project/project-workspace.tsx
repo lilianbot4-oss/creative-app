@@ -73,12 +73,12 @@ const sampleSeed = "Make packing feel like prepping for a new chapter, not a cho
 
 const SECTIONS = [
   { id: "overview", label: "Overview" },
-  { id: "brief", label: "Creative Map" },
-  { id: "concepts", label: "Concepts" },
+  { id: "brief", label: "Project Setup" },
+  { id: "concepts", label: "Ideas" },
   { id: "scripts", label: "Scripts" },
   { id: "storyboard", label: "Storyboard" },
-  { id: "pitch", label: "Pitch Builder" },
-  { id: "outputs", label: "Outputs" },
+  { id: "pitch", label: "Presentation Builder" },
+  { id: "outputs", label: "Generated Content" },
   { id: "feedback", label: "Feedback" },
   { id: "references", label: "References" },
   { id: "export", label: "Export" },
@@ -378,9 +378,9 @@ export default function ProjectWorkspace({
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Creative map snapshot</CardTitle>
+                  <CardTitle>Project setup summary</CardTitle>
                   <CardDescription>
-                    This is an AI-extracted map of the brief constraints, tone, and creative guidance.
+                    This is an AI-extracted summary of the project constraints, tone, and creative guidance.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -390,7 +390,7 @@ export default function ProjectWorkspace({
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Campaign generator</CardTitle>
+                  <CardTitle>Content generator</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CampaignGenerator
@@ -538,7 +538,7 @@ export default function ProjectWorkspace({
               <Card>
                 <CardHeader>
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <CardTitle>Campaign Outputs</CardTitle>
+                    <CardTitle>Generated Content</CardTitle>
                     {!aiEnabled ? <Badge variant="destructive">AI Disabled</Badge> : null}
                   </div>
                 </CardHeader>

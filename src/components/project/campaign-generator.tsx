@@ -57,7 +57,7 @@ export default function CampaignGenerator({
       } else if (!response.ok) {
         toast.error(data?.error || "Failed to generate campaign pack");
       } else {
-        toast.success("Campaign pack generated");
+        toast.success("Content pack generated");
       }
 
       const completed: string[] = data?.completed ?? [];
@@ -72,7 +72,7 @@ export default function CampaignGenerator({
       });
       setStatus({ ...nextStatus });
     } catch {
-      toast.error("Failed to generate campaign pack");
+      toast.error("Failed to generate content pack");
       PACK_STEPS.forEach((step) => {
         nextStatus[step] = "error";
       });
@@ -86,13 +86,13 @@ export default function CampaignGenerator({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-sm font-medium">Campaign generator</p>
+          <p className="text-sm font-medium">Content generator</p>
           <p className="text-xs text-muted-foreground">
-            Generate a full pack: one pager, expand, UGC scripts, pitch, virality.
+            Generate a full pack: summary, full breakdown, creator scripts, presentation outline, virality.
           </p>
         </div>
         <Button onClick={runPack} disabled={running}>
-          {running ? "Generating..." : "Generate Full Campaign Pack"}
+          {running ? "Generating..." : "Generate Full Content Pack"}
         </Button>
       </div>
       <div className="grid gap-2 md:grid-cols-2">

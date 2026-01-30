@@ -6,7 +6,7 @@ export default function HelpPage() {
       <header className="space-y-2">
         <h1 className="text-3xl font-semibold">Help & Workflow</h1>
         <p className="text-muted-foreground">
-          Learn how to turn a client brief into a polished, ready-to-present pitch pack.
+          Learn how to turn your project details into a polished, ready-to-present client presentation.
         </p>
       </header>
 
@@ -16,8 +16,8 @@ export default function HelpPage() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
-            This app helps creative teams develop advertising campaigns from initial brief to
-            client-ready pitch. You can work entirely manually, use AI assistance, or combine both
+            This app helps creative teams develop projects from initial details to
+            client-ready presentations. You can work entirely manually, use AI assistance, or combine both
             approaches.
           </p>
           <ol className="list-decimal space-y-3 pl-4">
@@ -25,35 +25,35 @@ export default function HelpPage() {
               <span className="font-medium text-foreground">Create a client and project</span>
               <p>
                 Start by adding a client from the Clients page, then create a project under that
-                client. Each project represents a single campaign or brief.
+                client. Each project represents a single creative effort.
               </p>
             </li>
             <li>
-              <span className="font-medium text-foreground">Upload or paste your brief</span>
+              <span className="font-medium text-foreground">Upload or paste your project details</span>
               <p>
-                In the project workspace, upload PDF or PPTX files containing your client brief, or
-                paste raw brief text directly. Files are parsed in your browser for privacy.
+                In the project workspace, upload PDF or PPTX files containing your project details, or
+                paste text directly. Files are parsed in your browser for privacy.
               </p>
             </li>
             <li>
-              <span className="font-medium text-foreground">Generate a Creative Map</span>
+              <span className="font-medium text-foreground">Set up your project</span>
               <p>
-                Parse the brief to extract key information: target audience, key message,
+                Parse your project details to extract key information: target audience, key message,
                 constraints (must-do and must-avoid), and tone. This structured summary guides all
                 creative work.
               </p>
             </li>
             <li>
-              <span className="font-medium text-foreground">Develop concepts</span>
+              <span className="font-medium text-foreground">Develop ideas</span>
               <p>
-                Create campaign concepts manually or generate them with AI. Each concept is a big
-                creative idea that can be expanded into multiple variants and scripts.
+                Create ideas manually or generate them with AI. Each idea is a big
+                creative direction that can be expanded into multiple variants and scripts.
               </p>
             </li>
             <li>
               <span className="font-medium text-foreground">Write and refine scripts</span>
               <p>
-                Turn concepts into production-ready scripts. Choose from multiple formats and use AI
+                Turn ideas into production-ready scripts. Choose from multiple formats and use AI
                 to refine tone, simplify language, or adjust for budget.
               </p>
             </li>
@@ -65,10 +65,10 @@ export default function HelpPage() {
               </p>
             </li>
             <li>
-              <span className="font-medium text-foreground">Export your pitch pack</span>
+              <span className="font-medium text-foreground">Export your presentation</span>
               <p>
-                Use the Pitch view to assemble a client-ready presentation with your creative map,
-                top concepts, primary script, storyboard, and supporting materials.
+                Use the Presentation view to assemble a client-ready export with your project setup,
+                top ideas, main script, storyboard, and supporting materials.
               </p>
             </li>
           </ol>
@@ -83,16 +83,16 @@ export default function HelpPage() {
           <p>Generate scripts in different formats depending on your deliverables:</p>
           <div className="grid gap-2">
             <div>
-              <p className="font-medium text-foreground">Launch 30s / Launch 60s</p>
+              <p className="font-medium text-foreground">Launch Video (30s) / Launch Video (60s)</p>
               <p>
                 Standard TV or digital video spots. Includes full script with timing, visuals, and
                 voiceover or dialogue.
               </p>
             </div>
             <div>
-              <p className="font-medium text-foreground">UGC 15s</p>
+              <p className="font-medium text-foreground">Creator Video (15s)</p>
               <p>
-                Short-form user-generated content style scripts optimized for social platforms like
+                Short-form creator-style scripts optimized for social platforms like
                 TikTok or Instagram Reels.
               </p>
             </div>
@@ -126,45 +126,45 @@ export default function HelpPage() {
           <CardTitle>AI generation modes</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>Use AI to generate different types of creative outputs:</p>
+          <p>Use AI to generate different types of creative content:</p>
           <div className="grid gap-2">
             <div>
-              <p className="font-medium text-foreground">Expand</p>
-              <p>Take a concept or idea and develop it further with additional detail and depth.</p>
+              <p className="font-medium text-foreground">Full Breakdown</p>
+              <p>Take an idea and develop it further with additional detail and depth.</p>
             </div>
             <div>
-              <p className="font-medium text-foreground">Alternatives</p>
+              <p className="font-medium text-foreground">Alternative Directions</p>
               <p>Generate multiple different approaches or variations on an existing idea.</p>
             </div>
             <div>
               <p className="font-medium text-foreground">Virality</p>
               <p>
-                Analyze and enhance concepts for shareability, identifying what makes content spread.
+                Analyze and enhance ideas for shareability, identifying what makes content spread.
               </p>
             </div>
             <div>
-              <p className="font-medium text-foreground">Pitch Outline</p>
-              <p>Structure your concepts into a presentation-ready outline for client meetings.</p>
+              <p className="font-medium text-foreground">Presentation Outline</p>
+              <p>Structure your ideas into a presentation-ready outline for client meetings.</p>
             </div>
             <div>
-              <p className="font-medium text-foreground">UGC Scripts</p>
-              <p>Generate authentic-feeling scripts for user-generated content campaigns.</p>
+              <p className="font-medium text-foreground">Creator Scripts</p>
+              <p>Generate authentic-feeling scripts for creator-driven content.</p>
             </div>
             <div>
               <p className="font-medium text-foreground">Storyboard</p>
               <p>Create frame-by-frame visual breakdowns with shot descriptions and shotlists.</p>
             </div>
             <div>
-              <p className="font-medium text-foreground">One Pager</p>
-              <p>Condense your campaign into a single-page executive summary.</p>
+              <p className="font-medium text-foreground">Summary</p>
+              <p>Condense your project into a single-page executive summary.</p>
             </div>
             <div>
               <p className="font-medium text-foreground">Press Release</p>
-              <p>Draft announcement copy for campaign launches or news.</p>
+              <p>Draft announcement copy for launches or news.</p>
             </div>
             <div>
               <p className="font-medium text-foreground">FAQ</p>
-              <p>Generate anticipated questions and answers about the campaign or product.</p>
+              <p>Generate anticipated questions and answers about the project or product.</p>
             </div>
           </div>
         </CardContent>
@@ -172,37 +172,37 @@ export default function HelpPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Key concepts</CardTitle>
+          <CardTitle>Key terms</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <div>
-            <p className="font-medium text-foreground">Creative Map</p>
+            <p className="font-medium text-foreground">Project Setup</p>
             <p>
-              A structured summary of your brief containing the target audience, key message,
-              constraints (what you must do and must avoid), and tone tags. The Creative Map keeps
+              A structured summary of your project containing the target audience, key message,
+              constraints (what you must do and must avoid), and tone tags. The project setup keeps
               all generated content aligned with client requirements.
             </p>
           </div>
           <div>
-            <p className="font-medium text-foreground">Concepts, Variants, and Scripts</p>
+            <p className="font-medium text-foreground">Ideas, Variants, and Scripts</p>
             <p>
-              <span className="font-medium">Concepts</span> are your big creative ideas—the core
-              campaign themes. <span className="font-medium">Variants</span> are different angles or
-              takes on a concept (e.g., humorous vs. emotional). <span className="font-medium">Scripts</span>{" "}
-              are the executable outputs in specific formats (30s spot, UGC, etc.) that bring
+              <span className="font-medium">Ideas</span> are your big creative directions—the core
+              themes. <span className="font-medium">Variants</span> are different angles or
+              takes on an idea (e.g., humorous vs. emotional). <span className="font-medium">Scripts</span>{" "}
+              are the final content in specific formats (30s spot, creator video, etc.) that bring
               variants to life.
             </p>
           </div>
           <div>
-            <p className="font-medium text-foreground">Primary outputs</p>
+            <p className="font-medium text-foreground">Main results</p>
             <p>
-              Mark any script or output as &quot;primary&quot; to use it by default in exports and pitch
-              packs. This helps when you have multiple versions and need to highlight the recommended
+              Mark any script or result as &quot;main&quot; to use it by default in exports and
+              presentations. This helps when you have multiple versions and need to highlight the recommended
               one for the client.
             </p>
           </div>
           <div>
-            <p className="font-medium text-foreground">Provenance labels</p>
+            <p className="font-medium text-foreground">Origin labels</p>
             <p>
               Every piece of content is labeled with how it was created: <span className="font-medium">Human</span>{" "}
               (manually written), <span className="font-medium">AI Assisted</span> (AI-generated then
@@ -215,7 +215,7 @@ export default function HelpPage() {
             <p className="font-medium text-foreground">Project statuses</p>
             <p>
               Track where each project stands: <span className="font-medium">Ideation</span>{" "}
-              (developing concepts), <span className="font-medium">Pitch</span> (preparing for
+              (developing ideas), <span className="font-medium">Presentation</span> (preparing for
               client), <span className="font-medium">Revision</span> (incorporating feedback),{" "}
               <span className="font-medium">Approved</span> (client signed off), or{" "}
               <span className="font-medium">Delivered</span> (work complete).
@@ -255,25 +255,25 @@ export default function HelpPage() {
           <div>
             <p className="font-medium text-foreground">Can I work without AI?</p>
             <p>
-              Yes. Every feature supports manual input. You can write concepts, scripts, and
+              Yes. Every feature supports manual input. You can write ideas, scripts, and
               storyboards by hand. AI is optional and designed to accelerate your workflow, not
               replace your creative judgment.
             </p>
           </div>
           <div>
-            <p className="font-medium text-foreground">How do I customize what appears in the pitch pack?</p>
+            <p className="font-medium text-foreground">How do I customize what appears in the presentation?</p>
             <p>
-              The Pitch view includes toggle controls at the top of the page. You can show or hide
-              constraints, appendix outputs, references, feedback, provenance labels, and the image
-              gallery. Select which concepts to feature by checking them in the concept selector.
+              The Presentation view includes toggle controls at the top of the page. You can show or hide
+              constraints, additional results, references, feedback, origin labels, and the image
+              gallery. Select which ideas to feature by checking them in the idea selector.
             </p>
           </div>
           <div>
             <p className="font-medium text-foreground">What is a key visual?</p>
             <p>
-              Key visuals are AI-generated images that represent your concept visually. You can
-              generate multiple images per concept and mark one as primary to feature it in pitch
-              packs. These help clients visualize the creative direction before production.
+              Key visuals are AI-generated images that represent your idea visually. You can
+              generate multiple images per idea and mark one as the main image to feature it in
+              presentations. These help clients visualize the creative direction before production.
             </p>
           </div>
         </CardContent>

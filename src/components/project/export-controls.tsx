@@ -14,6 +14,8 @@ export default function ExportControls() {
   const [includeAppendix, setIncludeAppendix] = useState(true);
   const [includeProvenance, setIncludeProvenance] = useState(false);
   const [includeGallery, setIncludeGallery] = useState(true);
+  const [includeConcepts, setIncludeConcepts] = useState(true);
+  const [includeScripts, setIncludeScripts] = useState(true);
 
   useEffect(() => {
     setIncludeReferences(searchParams.get("refs") !== "false");
@@ -21,6 +23,8 @@ export default function ExportControls() {
     setIncludeAppendix(searchParams.get("appendix") !== "false");
     setIncludeProvenance(searchParams.get("provenance") === "true");
     setIncludeGallery(searchParams.get("gallery") !== "false");
+    setIncludeConcepts(searchParams.get("concepts") !== "false");
+    setIncludeScripts(searchParams.get("scripts") !== "false");
   }, [searchParams]);
 
   const updateParam = (key: string, value: boolean) => {
@@ -45,7 +49,7 @@ export default function ExportControls() {
               updateParam("refs", event.target.checked);
             }}
           />
-          Include references
+          Show references
         </label>
         <label className="flex items-center gap-2">
           <input
@@ -56,7 +60,29 @@ export default function ExportControls() {
               updateParam("feedback", event.target.checked);
             }}
           />
-          Include feedback
+          Show feedback
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={includeConcepts}
+            onChange={(event) => {
+              setIncludeConcepts(event.target.checked);
+              updateParam("concepts", event.target.checked);
+            }}
+          />
+          Show ideas
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={includeScripts}
+            onChange={(event) => {
+              setIncludeScripts(event.target.checked);
+              updateParam("scripts", event.target.checked);
+            }}
+          />
+          Show scripts
         </label>
         <label className="flex items-center gap-2">
           <input
@@ -67,7 +93,7 @@ export default function ExportControls() {
               updateParam("appendix", event.target.checked);
             }}
           />
-          Include appendix outputs
+          Show additional results
         </label>
         <label className="flex items-center gap-2">
           <input
@@ -78,7 +104,7 @@ export default function ExportControls() {
               updateParam("provenance", event.target.checked);
             }}
           />
-          Include provenance (internal)
+          Show origin info (internal)
         </label>
         <label className="flex items-center gap-2">
           <input
@@ -89,7 +115,7 @@ export default function ExportControls() {
               updateParam("gallery", event.target.checked);
             }}
           />
-          Include image gallery
+          Show image gallery
         </label>
       </div>
       <div className="flex gap-2">

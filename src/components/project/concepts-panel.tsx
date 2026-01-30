@@ -296,7 +296,7 @@ export default function ConceptsPanel({
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Thesis</label>
+                  <label className="text-sm font-medium">Core idea</label>
                   <Textarea
                     rows={3}
                     value={thesis}
@@ -304,14 +304,14 @@ export default function ConceptsPanel({
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Product integration</label>
+                  <label className="text-sm font-medium">Product tie-in</label>
                   <Input
                     value={integration}
                     onChange={(event) => setIntegration(event.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Scalability</label>
+                  <label className="text-sm font-medium">Growth potential</label>
                   <Input
                     value={scalability}
                     onChange={(event) => setScalability(event.target.value)}
@@ -391,7 +391,7 @@ export default function ConceptsPanel({
                     <div className="flex flex-wrap items-center gap-2">
                       <div className="flex items-center gap-1">
                         <Badge variant="secondary">{ORIGIN_LABELS[origin]}</Badge>
-                        <InfoTooltip label="Provenance: how this concept was created." />
+                        <InfoTooltip label="Origin: how this idea was created." />
                       </div>
                       <div className="flex items-center gap-1">
                         <Badge variant="outline">{variants.length} variants</Badge>
@@ -403,14 +403,14 @@ export default function ConceptsPanel({
                 <CardContent className="space-y-3 text-sm">
                   <div className="space-y-2 rounded-xl border border-border/60 bg-muted/20 p-3">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium">Key visual</p>
+                      <p className="text-sm font-medium">Image</p>
                       {primaryAsset ? <Badge variant="secondary">Primary</Badge> : null}
                     </div>
                     {primaryUrl ? (
                       <>
                         <KeyVisualPreview
                           src={primaryUrl}
-                          alt={`Key visual for ${concept.title}`}
+                          alt={`Image for ${concept.title}`}
                           label="Primary"
                           aspect="card"
                           enableLightbox
@@ -443,13 +443,13 @@ export default function ConceptsPanel({
                   ) : null}
                   {integration ? (
                     <div>
-                      <p className="font-medium">Product integration</p>
+                      <p className="font-medium">Product tie-in</p>
                       <p className="text-muted-foreground">{integration}</p>
                     </div>
                   ) : null}
                   {concept.scalability ? (
                     <div>
-                      <p className="font-medium">Scalability</p>
+                      <p className="font-medium">Growth potential</p>
                       <p className="text-muted-foreground">{concept.scalability}</p>
                     </div>
                   ) : null}

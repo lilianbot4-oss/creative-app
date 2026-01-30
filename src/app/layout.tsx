@@ -20,9 +20,9 @@ const monoFont = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Creative Campaign Copilot",
+  title: "Creative Copilot",
   description:
-    "An all-in-one workspace for freelance creatives to organize clients, projects, briefs, and AI-powered campaign outputs.",
+    "An all-in-one workspace for freelance creatives to organize clients, projects, and AI-powered content.",
 };
 
 export default function RootLayout({

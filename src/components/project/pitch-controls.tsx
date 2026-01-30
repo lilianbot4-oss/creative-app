@@ -47,7 +47,7 @@ export default function PitchControls() {
               updateParam("constraints", event.target.checked);
             }}
           />
-          Include constraints
+          Show constraints
         </label>
         <label className="flex items-center gap-2">
           <input
@@ -58,7 +58,7 @@ export default function PitchControls() {
               updateParam("appendix", event.target.checked);
             }}
           />
-          Include appendix
+          Show additional results
         </label>
         <label className="flex items-center gap-2">
           <input
@@ -69,7 +69,7 @@ export default function PitchControls() {
               updateParam("refs", event.target.checked);
             }}
           />
-          Include references
+          Show references
         </label>
         <label className="flex items-center gap-2">
           <input
@@ -80,7 +80,7 @@ export default function PitchControls() {
               updateParam("feedback", event.target.checked, "true");
             }}
           />
-          Include feedback
+          Show feedback
         </label>
         <label className="flex items-center gap-2">
           <input
@@ -91,7 +91,7 @@ export default function PitchControls() {
               updateParam("provenance", event.target.checked, "true");
             }}
           />
-          Include provenance (internal)
+          Show origin info (internal)
         </label>
         <label className="flex items-center gap-2">
           <input
@@ -102,7 +102,7 @@ export default function PitchControls() {
               updateParam("gallery", event.target.checked, "true");
             }}
           />
-          Include image gallery
+          Show image gallery
         </label>
       </div>
       <div className="flex gap-2">
