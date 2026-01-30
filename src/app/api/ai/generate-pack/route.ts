@@ -124,6 +124,16 @@ export async function POST(request: Request) {
         estimateTokensFromText(systemPrompt + userPrompt)
       );
       if (!usage.allowed) {
+        if (usage.reason === "error") {
+          return NextResponse.json(
+            {
+              error: "AI usage tracking unavailable. Try again later.",
+              completed,
+              failedMode: mode,
+            },
+            { status: 503 }
+          );
+        }
         return NextResponse.json(
           {
             error: "Daily AI request limit reached. Try again tomorrow.",
