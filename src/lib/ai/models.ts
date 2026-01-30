@@ -22,28 +22,64 @@ export type ImageModelInfo = ModelInfo & {
   provider: ImageProvider;
 };
 
-export const DEFAULT_TEXT_MODEL = "gpt-4.1-mini";
+export const DEFAULT_TEXT_MODEL = "gpt-5-mini";
 export const DEFAULT_REASONING_MODE = "balanced";
 export const DEFAULT_IMAGE_PROVIDER: ImageProvider = "openai";
 
 export const TEXT_MODEL_PRESETS: ModelInfo[] = [
+  {
+    id: "gpt-5.1",
+    label: "GPT-5.1",
+    description: "Flagship model for complex reasoning and high-stakes creative work.",
+    speed: "slow",
+    cost: "high",
+    capabilities: { text: true, images: false, json: true, tools: true, vision: true },
+    recommendedFor: ["Complex reasoning", "High-stakes writing", "Agentic workflows"],
+  },
+  {
+    id: "gpt-5-mini",
+    label: "GPT-5 Mini",
+    description: "Faster, cost-efficient GPT-5 for well-defined creative tasks.",
+    speed: "fast",
+    cost: "medium",
+    capabilities: { text: true, images: false, json: true, tools: true, vision: true },
+    recommendedFor: ["Everyday creative work", "Quick iterations", "High-throughput tasks"],
+  },
+  {
+    id: "gpt-5-nano",
+    label: "GPT-5 Nano",
+    description: "Fastest, lowest-cost GPT-5 for lightweight tasks.",
+    speed: "fast",
+    cost: "low",
+    capabilities: { text: true, images: false, json: true, tools: true, vision: true },
+    recommendedFor: ["Summaries", "Classification", "Bulk processing"],
+  },
+  {
+    id: "gpt-4.1",
+    label: "GPT-4.1",
+    description: "Strong all-around model with long context and tool calling.",
+    speed: "medium",
+    cost: "medium",
+    capabilities: { text: true, images: false, json: true, tools: true, vision: true },
+    recommendedFor: ["Campaign concepts", "Scriptwriting", "Pitch decks"],
+  },
   {
     id: "gpt-4.1-mini",
     label: "GPT-4.1 Mini",
     description: "Fast, cost-effective model for everyday creative tasks.",
     speed: "fast",
     cost: "low",
-    capabilities: { text: true, images: false, json: true, tools: true },
+    capabilities: { text: true, images: false, json: true, tools: true, vision: true },
     recommendedFor: ["Quick drafts", "Brief parsing", "Ideation"],
   },
   {
-    id: "gpt-4.1",
-    label: "GPT-4.1",
-    description: "Balanced quality for pitch-ready creative outputs.",
-    speed: "medium",
-    cost: "medium",
-    capabilities: { text: true, images: false, json: true, tools: true },
-    recommendedFor: ["Campaign concepts", "Scriptwriting", "Pitch decks"],
+    id: "gpt-4.1-nano",
+    label: "GPT-4.1 Nano",
+    description: "Fastest, lowest-cost GPT-4.1 for lightweight tasks.",
+    speed: "fast",
+    cost: "low",
+    capabilities: { text: true, images: false, json: true, tools: true, vision: true },
+    recommendedFor: ["Summaries", "Extraction", "Bulk tasks"],
   },
   {
     id: "gpt-4o",
@@ -53,6 +89,15 @@ export const TEXT_MODEL_PRESETS: ModelInfo[] = [
     cost: "high",
     capabilities: { text: true, images: false, json: true, tools: true, vision: true },
     recommendedFor: ["Client-facing copy", "High-stakes pitches"],
+  },
+  {
+    id: "gpt-4o-mini",
+    label: "GPT-4o Mini",
+    description: "Fast, affordable model for focused tasks.",
+    speed: "fast",
+    cost: "low",
+    capabilities: { text: true, images: false, json: true, tools: true, vision: true },
+    recommendedFor: ["Tagging", "Classification", "Quick drafts"],
   },
   {
     id: "gemini-3-pro-preview",
@@ -169,12 +214,12 @@ export function resolveTextModel(options: {
 
   switch (options.reasoningMode) {
     case "fast":
-      return DEFAULT_TEXT_MODEL;
+      return "gpt-5-nano";
     case "premium":
-      return "gpt-4o";
+      return "gpt-5.1";
     case "balanced":
     default:
-      return "gpt-4.1";
+      return "gpt-5-mini";
   }
 }
 

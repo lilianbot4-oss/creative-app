@@ -112,7 +112,7 @@ export default function ModelsSettingsPanel({
         </CardHeader>
         <CardContent className="space-y-8">
           <div className="space-y-4">
-            <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">OpenAI Models</h3>
+            <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">OpenAI API Models</h3>
             <div className="grid gap-4 md:grid-cols-2">
               {TEXT_MODEL_PRESETS.filter(m => m.id.startsWith("gpt")).map((model) => {
                 const selected = model.id === textModel;

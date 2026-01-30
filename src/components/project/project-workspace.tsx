@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { ChevronDownIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -86,6 +87,11 @@ const SECTIONS = [
 
 type SectionId = (typeof SECTIONS)[number]["id"];
 
+const PRIMARY_SECTION_IDS = new Set<SectionId>(["overview", "brief", "concepts", "scripts", "export"]);
+const PRIMARY_SECTIONS = SECTIONS.filter((item) => PRIMARY_SECTION_IDS.has(item.id));
+const OTHER_SECTIONS = SECTIONS.filter((item) => !PRIMARY_SECTION_IDS.has(item.id));
+const OTHER_SECTION_IDS = new Set(OTHER_SECTIONS.map((section) => section.id));
+
 function stripMarkdown(markdown: string) {
   return markdown
     .replace(/```[\s\S]*?```/g, "")
@@ -136,15 +142,24 @@ export default function ProjectWorkspace({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const otherToolsId = useId();
   const [isGenerating, setIsGenerating] = useState(false);
   const [statusValue, setStatusValue] = useState(project.status);
 
   const sectionParam = (searchParams.get("section") as SectionId | null) ?? "overview";
   const [section, setSection] = useState<SectionId>(sectionParam);
+  const [otherToolsOpen, setOtherToolsOpen] = useState(() => OTHER_SECTION_IDS.has(sectionParam));
+  const isOtherToolActive = OTHER_SECTION_IDS.has(section);
 
   useEffect(() => {
     setSection(sectionParam);
   }, [sectionParam]);
+
+  useEffect(() => {
+    if (isOtherToolActive) {
+      setOtherToolsOpen(true);
+    }
+  }, [isOtherToolActive]);
 
   const setSectionAndPush = useCallback(
     (next: SectionId) => {
@@ -154,6 +169,15 @@ export default function ProjectWorkspace({
       router.replace(`${pathname}?${params.toString()}`);
     },
     [pathname, router, searchParams]
+  );
+  const handleSectionClick = useCallback(
+    (next: SectionId) => {
+      setSectionAndPush(next);
+      if (OTHER_SECTION_IDS.has(next)) {
+        setOtherToolsOpen(true);
+      }
+    },
+    [setSectionAndPush]
   );
 
   const ideaForm = useForm<IdeaFormValues>({
@@ -358,7 +382,7 @@ export default function ProjectWorkspace({
 
       <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
         <aside className="space-y-2">
-          {SECTIONS.map((item) => (
+          {PRIMARY_SECTIONS.map((item) => (
             <button
               key={item.id}
               className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition ${
@@ -366,11 +390,42 @@ export default function ProjectWorkspace({
                   ? "border-primary bg-primary/10"
                   : "border-border/60 bg-background/60 hover:bg-muted/40"
               }`}
-              onClick={() => setSectionAndPush(item.id)}
+              onClick={() => handleSectionClick(item.id)}
             >
               {item.label}
             </button>
           ))}
+          <div className="space-y-2">
+            <button
+              type="button"
+              className="flex w-full items-center justify-between rounded-xl border border-border/60 bg-background/60 px-3 py-2 text-left text-sm font-medium transition hover:bg-muted/40"
+              aria-expanded={otherToolsOpen}
+              aria-controls={otherToolsId}
+              onClick={() => setOtherToolsOpen((prev) => (isOtherToolActive ? true : !prev))}
+            >
+              Other Tools
+              <ChevronDownIcon
+                className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                  otherToolsOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+            <div id={otherToolsId} className={otherToolsOpen ? "space-y-2" : "hidden"}>
+              {OTHER_SECTIONS.map((item) => (
+                <button
+                  key={item.id}
+                  className={`w-full rounded-xl border px-3 py-2 text-left text-sm transition ${
+                    section === item.id
+                      ? "border-primary bg-primary/10"
+                      : "border-border/60 bg-background/60 hover:bg-muted/40"
+                  }`}
+                  onClick={() => handleSectionClick(item.id)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </aside>
 
         <div className="space-y-6">

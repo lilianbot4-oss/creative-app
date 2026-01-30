@@ -560,6 +560,41 @@ export async function setActiveBriefUploadAction(input: {
         });
 
   if (error) throw error;
+
+  if (input.uploadId) {
+    const { data: upload, error: uploadError } = await supabase
+      .from("project_brief_uploads")
+      .select("extracted_text")
+      .eq("id", input.uploadId)
+      .eq("project_id", input.projectId)
+      .maybeSingle();
+
+    if (uploadError) throw uploadError;
+
+    const extractedText = upload?.extracted_text?.trim() ?? "";
+    if (extractedText) {
+      const { data: latestBrief, error: latestBriefError } = await supabase
+        .from("briefs")
+        .select("raw_text")
+        .eq("project_id", input.projectId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (latestBriefError) throw latestBriefError;
+
+      if (!latestBrief || latestBrief.raw_text.trim() !== extractedText) {
+        const { error: briefError } = await supabase.from("briefs").insert({
+          user_id: user.id,
+          project_id: input.projectId,
+          raw_text: extractedText,
+        });
+
+        if (briefError) throw briefError;
+      }
+    }
+  }
+
   revalidatePath(`/app/projects/${input.projectId}`);
 }
 

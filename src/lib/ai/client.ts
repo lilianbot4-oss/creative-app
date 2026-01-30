@@ -37,5 +37,5 @@ export function getModel(modelId: string) {
     }
     return googleProvider(modelId);
   }
-  return openaiProvider("gpt-4o-mini");
+  return openaiProvider("gpt-5-mini");
 }
