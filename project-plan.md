@@ -1,11 +1,11 @@
 # Project Plan - Creative Campaign Copilot
-Last updated: 2026-01-30
+Last updated: 2026-01-31
 
 ## Product summary
 Creative Campaign Copilot is an MVP workspace for freelance creative advertisers to organize clients, projects, briefs, and generate pitch-ready campaign outputs with AI. The app supports fully manual workflows with optional AI acceleration.
 
 ## Current status
-MVP is functional with auth, core workflow screens, AI generation for text and images, and export views. Supabase is the system of record and enforces RLS. AI model selection, usage limits, and guardrails are implemented. PDF/PPTX brief parsing runs client-side and only stores extracted text.
+MVP is functional with auth, core workflow screens, AI generation for text and images, and export views. Supabase is the system of record and enforces RLS. AI model selection, usage limits, and guardrails are implemented. PDF/PPTX brief parsing runs client-side and only stores extracted text. Public share links and a project activity log are now implemented.
 
 ## Core workflow (implemented)
 - Auth and onboarding: email auth, protected /app routes, onboarding wizard, demo data seed.
@@ -28,6 +28,8 @@ MVP is functional with auth, core workflow screens, AI generation for text and i
 - Markdown output viewer with copy, plain text copy, and download.
 - Print-friendly export and pitch views with optional toggles.
 - Keyboard shortcuts (G+D, G+P, G+C, ?).
+- Share link management dialog for public pitch/export links.
+- Activity timeline in the project workspace.
 
 ### AI generation capabilities
 - Brief parsing and creative spec extraction.
@@ -53,6 +55,8 @@ MVP is functional with auth, core workflow screens, AI generation for text and i
 - storyboards: frames + shotlist linked to scripts.
 - outputs: generation mode, versioning, primary flag.
 - feedback: notes linked to outputs.
+- share_links: tokenized public share URLs with view type, expiry, and revoke.
+- activity_log: append-only event log for project and AI actions.
 - references: URLs and images (Supabase Storage).
 - concept_assets: key visuals and other generated images (Supabase Storage).
 - usage: per-user daily usage tracking.
@@ -93,11 +97,7 @@ MVP is functional with auth, core workflow screens, AI generation for text and i
 - Add automated tests (unit + integration) for critical flows and API routes.
 - Add CI pipeline (lint, typecheck, tests).
 - Add error monitoring and runtime logging for AI failures and storage errors.
-- Add role-based sharing or public share links if client review is required outside auth.
-- Add project-level activity history or audit log for provenance.
 
 ## Open questions
 - Do we want per-project AI model settings surfaced to users, or only global settings?
-- Should the pitch/export views be available as shareable public links?
 - Is there a preferred model default for text and images, or should the app always use settings only?
-

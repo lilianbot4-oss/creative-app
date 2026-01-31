@@ -12,6 +12,7 @@ import { buildGenerateScriptPrompt } from "@/lib/ai/prompts/generateScript";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
 import { getResolvedAISettings } from "@/lib/ai/settings";
 import { DEFAULT_TEXT_MODEL } from "@/lib/ai/models";
+import { logActivity } from "@/lib/activity";
 
 export async function POST(request: Request) {
   try {
@@ -180,6 +181,20 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    void logActivity({
+      supabase,
+      userId: user.id,
+      action: "ai.script_generated",
+      entityType: "script",
+      entityId: script.id,
+      projectId: parsed.data.projectId,
+      metadata: {
+        format: script.format,
+        concept_id: script.concept_id ?? null,
+        variant_id: script.variant_id ?? null,
+      },
+    });
 
     return NextResponse.json({ script });
   } catch (error) {

@@ -7,6 +7,7 @@ import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
 import { getResolvedAISettings } from "@/lib/ai/settings";
 import { buildKeyVisualPrompt } from "@/lib/ai/prompts/keyVisual";
 import { DEFAULT_IMAGE_PROVIDER, ImageProvider } from "@/lib/ai/models";
+import { logActivity } from "@/lib/activity";
 
 export const runtime = "nodejs";
 
@@ -320,6 +321,24 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    void logActivity({
+      supabase,
+      userId: user.id,
+      action: "ai.key_visual_generated",
+      entityType: "concept_asset",
+      entityId: createdAssets[0]?.id ?? null,
+      projectId,
+      metadata: {
+        count: createdAssets.length,
+        style,
+        concept_id: conceptId ?? null,
+        variant_id: variantId ?? null,
+        script_id: scriptId ?? null,
+        provider,
+        model: settings.image_model,
+      },
+    });
 
     return NextResponse.json({
       assets: createdAssets,

@@ -12,6 +12,7 @@ import { buildPrompt } from "@/lib/openai/promptBuilder";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
 import { getResolvedAISettings } from "@/lib/ai/settings";
 import { DEFAULT_TEXT_MODEL } from "@/lib/ai/models";
+import { logActivity } from "@/lib/activity";
 
 const packSchema = z.object({
   projectId: z.string().uuid(),
@@ -191,6 +192,16 @@ export async function POST(request: Request) {
 
       completed.push(mode);
     }
+
+    void logActivity({
+      supabase,
+      userId: user.id,
+      action: "ai.pack_generated",
+      entityType: "output",
+      entityId: null,
+      projectId,
+      metadata: { modes: completed },
+    });
 
     return NextResponse.json({ completed });
   } catch (error) {

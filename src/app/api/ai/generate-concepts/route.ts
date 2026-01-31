@@ -13,6 +13,7 @@ import { buildGenerateConceptsPrompt } from "@/lib/ai/prompts/generateConcepts";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
 import { getResolvedAISettings } from "@/lib/ai/settings";
 import { DEFAULT_TEXT_MODEL } from "@/lib/ai/models";
+import { logActivity } from "@/lib/activity";
 
 export async function POST(request: Request) {
   try {
@@ -168,6 +169,16 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    void logActivity({
+      supabase,
+      userId: user.id,
+      action: "ai.concepts_generated",
+      entityType: "concept",
+      entityId: concepts[0]?.id ?? null,
+      projectId: parsed.data.projectId,
+      metadata: { count: concepts.length },
+    });
 
     return NextResponse.json({ concepts });
   } catch (error) {

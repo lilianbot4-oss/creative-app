@@ -13,6 +13,7 @@ import type {
   ProjectBriefUpload,
   Script,
   Storyboard,
+  ActivityEvent,
 } from "@/lib/types";
 
 export async function getUser() {
@@ -348,4 +349,28 @@ export async function getStoryboard(scriptId: string) {
     .maybeSingle();
   if (error) throw error;
   return data as Storyboard | null;
+}
+
+export async function getProjectActivity(
+  projectId: string,
+  options?: { limit?: number; offset?: number }
+) {
+  const supabase = await createClient();
+  let query = supabase
+    .from("activity_log")
+    .select("*")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false });
+
+  if (typeof options?.offset === "number" && typeof options?.limit === "number") {
+    const start = Math.max(options.offset, 0);
+    const end = start + Math.max(options.limit, 1) - 1;
+    query = query.range(start, end);
+  } else if (typeof options?.limit === "number") {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as ActivityEvent[];
 }

@@ -31,12 +31,15 @@ import type {
   Reference,
   Script,
   Storyboard,
+  ActivityEvent,
+  ShareLink,
 } from "@/lib/types";
 import { getImageModelInfo, getTextModelInfo } from "@/lib/ai/models";
 import ReferencesPanel from "@/components/project/references-panel";
 import OutputsPanel from "@/components/project/outputs-panel";
 import ShareProjectButton from "@/components/project/share-project-button";
 import FeedbackRewritePanel from "@/components/project/feedback-rewrite-panel";
+import ActivityPanel from "@/components/project/activity-panel";
 import CampaignGenerator from "@/components/project/campaign-generator";
 import CreativeMapPanel from "@/components/project/creative-map-panel";
 import ConceptsPanel from "@/components/project/concepts-panel";
@@ -81,6 +84,7 @@ const SECTIONS = [
   { id: "pitch", label: "Presentation Builder" },
   { id: "outputs", label: "Generated Content" },
   { id: "feedback", label: "Feedback" },
+  { id: "activity", label: "Activity" },
   { id: "references", label: "References" },
   { id: "export", label: "Export" },
 ] as const;
@@ -114,12 +118,15 @@ export default function ProjectWorkspace({
   briefUploads,
   outputs,
   feedback,
+  activityEvents,
+  activityHasMore,
   references,
   concepts,
   assetsByConcept,
   variantsByConcept,
   scripts,
   storyboardsByScript,
+  shareLinks,
   aiSettings,
   aiEnabled,
 }: {
@@ -130,12 +137,15 @@ export default function ProjectWorkspace({
   briefUploads: ProjectBriefUpload[];
   outputs: Output[];
   feedback: Feedback[];
+  activityEvents: ActivityEvent[];
+  activityHasMore: boolean;
   references: Reference[];
   concepts: Concept[];
   assetsByConcept: Record<string, ConceptAsset[]>;
   variantsByConcept: Record<string, ConceptVariant[]>;
   scripts: Script[];
   storyboardsByScript: Record<string, Storyboard | null>;
+  shareLinks: ShareLink[];
   aiSettings: AISettings;
   aiEnabled: boolean;
 }) {
@@ -145,6 +155,7 @@ export default function ProjectWorkspace({
   const otherToolsId = useId();
   const [isGenerating, setIsGenerating] = useState(false);
   const [statusValue, setStatusValue] = useState(project.status);
+  const [mounted, setMounted] = useState(false);
 
   const sectionParam = (searchParams.get("section") as SectionId | null) ?? "overview";
   const [section, setSection] = useState<SectionId>(sectionParam);
@@ -154,6 +165,10 @@ export default function ProjectWorkspace({
   useEffect(() => {
     setSection(sectionParam);
   }, [sectionParam]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isOtherToolActive) {
@@ -348,24 +363,28 @@ export default function ProjectWorkspace({
             <Badge variant={imageModelInfo ? "secondary" : "outline"}>
               Image: {imageModelInfo ? imageModelInfo.label : "Not configured"}
             </Badge>
-            <Select
-              value={statusValue}
-              onValueChange={(value) => {
-                setStatusValue(value as (typeof PROJECT_STATUSES)[number]);
-                handleStatusChange(value);
-              }}
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                {PROJECT_STATUSES.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {status}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {mounted ? (
+              <Select
+                value={statusValue}
+                onValueChange={(value) => {
+                  setStatusValue(value as (typeof PROJECT_STATUSES)[number]);
+                  handleStatusChange(value);
+                }}
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROJECT_STATUSES.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="h-9 w-[200px] rounded-md border border-input bg-transparent" />
+            )}
             <Button onClick={() => setSectionAndPush("concepts")} disabled={!aiEnabled}>
               Generate
             </Button>
@@ -375,7 +394,7 @@ export default function ProjectWorkspace({
             <Button variant="secondary" asChild>
               <Link href={`/app/projects/${project.id}/pitch`}>Pitch</Link>
             </Button>
-            <ShareProjectButton projectId={project.id} />
+            <ShareProjectButton projectId={project.id} shareLinks={shareLinks} />
           </div>
         </CardContent>
       </Card>
@@ -746,6 +765,14 @@ export default function ProjectWorkspace({
                 </div>
               </CardContent>
             </Card>
+          ) : null}
+
+          {section === "activity" ? (
+            <ActivityPanel
+              projectId={project.id}
+              initialEvents={activityEvents}
+              initialHasMore={activityHasMore}
+            />
           ) : null}
 
           {section === "references" ? (

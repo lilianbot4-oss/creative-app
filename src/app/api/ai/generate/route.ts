@@ -12,6 +12,7 @@ import { outputGenerateSchema } from "@/lib/validators";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
 import { getResolvedAISettings } from "@/lib/ai/settings";
 import { DEFAULT_TEXT_MODEL } from "@/lib/ai/models";
+import { logActivity } from "@/lib/activity";
 
 export async function POST(request: Request) {
   try {
@@ -226,6 +227,20 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    void logActivity({
+      supabase,
+      userId: user.id,
+      action: "ai.output_generated",
+      entityType: "output",
+      entityId: output.id,
+      projectId,
+      metadata: {
+        mode,
+        version: output.version,
+        is_primary: shouldBePrimary,
+      },
+    });
 
     return NextResponse.json({ output });
   } catch {

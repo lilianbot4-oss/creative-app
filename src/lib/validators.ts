@@ -47,6 +47,13 @@ export const feedbackSchema = z.object({
   text: z.string().min(1, "Feedback is required"),
 });
 
+export const createShareLinkSchema = z.object({
+  project_id: z.string().uuid(),
+  view_type: z.enum(["pitch", "export"]),
+  label: z.string().max(120).optional().nullable(),
+  expires_at: z.string().optional().nullable(),
+});
+
 export const outputGenerateSchema = z.object({
   projectId: z.string().uuid(),
   mode: z.enum(GENERATION_MODES),

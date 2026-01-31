@@ -195,3 +195,27 @@ export type Storyboard = {
   shotlist: Record<string, unknown> | null;
   created_at: string;
 };
+
+export type ShareLink = {
+  id: string;
+  user_id: string;
+  project_id: string;
+  token: string;
+  label: string | null;
+  view_type: "pitch" | "export";
+  expires_at: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type ActivityEvent = {
+  id: string;
+  user_id: string | null;
+  project_id: string | null;
+  client_id: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+};

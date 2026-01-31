@@ -13,6 +13,7 @@ import { buildGenerateVariantsPrompt } from "@/lib/ai/prompts/generateVariants";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
 import { getResolvedAISettings } from "@/lib/ai/settings";
 import { DEFAULT_TEXT_MODEL } from "@/lib/ai/models";
+import { logActivity } from "@/lib/activity";
 
 export async function POST(request: Request) {
   try {
@@ -133,6 +134,16 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    void logActivity({
+      supabase,
+      userId: user.id,
+      action: "ai.variants_generated",
+      entityType: "concept_variant",
+      entityId: variants[0]?.id ?? null,
+      projectId: concept.project_id,
+      metadata: { count: variants.length, concept_id: concept.id },
+    });
 
     return NextResponse.json({ variants });
   } catch (error) {

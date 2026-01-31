@@ -604,3 +604,66 @@ alter table public.concepts
   add column if not exists parent_concept_id uuid references public.concepts (id) on delete set null;
 
 create index if not exists concepts_parent_concept_idx on public.concepts (parent_concept_id);
+
+-- PHASE 8+ PUBLIC SHARE LINKS
+-- Run the statements below in the Supabase SQL Editor to apply the latest schema updates.
+-- All statements are intended to be safe to run on an existing database (idempotent).
+
+create table if not exists public.share_links (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users (id) on delete cascade not null,
+  project_id uuid references public.projects (id) on delete cascade not null,
+  token text not null unique,
+  label text,
+  view_type text not null default 'pitch' check (view_type in ('pitch', 'export')),
+  expires_at timestamptz,
+  is_active boolean not null default true,
+  created_at timestamptz default now()
+);
+
+create index if not exists share_links_project_idx on public.share_links (project_id);
+
+alter table public.share_links enable row level security;
+
+drop policy if exists "Share links are viewable by owner" on public.share_links;
+drop policy if exists "Share links are insertable by owner" on public.share_links;
+drop policy if exists "Share links are updatable by owner" on public.share_links;
+drop policy if exists "Share links are deletable by owner" on public.share_links;
+
+create policy "Share links are viewable by owner" on public.share_links
+  for select using (auth.uid() = user_id);
+create policy "Share links are insertable by owner" on public.share_links
+  for insert with check (auth.uid() = user_id);
+create policy "Share links are updatable by owner" on public.share_links
+  for update using (auth.uid() = user_id);
+create policy "Share links are deletable by owner" on public.share_links
+  for delete using (auth.uid() = user_id);
+
+-- PHASE 8+ ACTIVITY LOG
+-- Run the statements below in the Supabase SQL Editor to apply the latest schema updates.
+-- All statements are intended to be safe to run on an existing database (idempotent).
+
+create table if not exists public.activity_log (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users (id) on delete set null,
+  project_id uuid references public.projects (id) on delete cascade,
+  client_id uuid references public.clients (id) on delete cascade,
+  action text not null,
+  entity_type text not null,
+  entity_id uuid,
+  metadata jsonb,
+  created_at timestamptz default now()
+);
+
+create index if not exists activity_log_project_created_idx
+  on public.activity_log (project_id, created_at desc);
+
+alter table public.activity_log enable row level security;
+
+drop policy if exists "Activity log is viewable by owner" on public.activity_log;
+drop policy if exists "Activity log is insertable by owner" on public.activity_log;
+
+create policy "Activity log is viewable by owner" on public.activity_log
+  for select using (auth.uid() = user_id);
+create policy "Activity log is insertable by owner" on public.activity_log
+  for insert with check (auth.uid() = user_id);

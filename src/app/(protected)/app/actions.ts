@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod";
+import { randomBytes } from "crypto";
 import {
   batchCreateConceptsSchema,
   brandVoiceSchema,
@@ -11,11 +12,13 @@ import {
   conceptSchema,
   conceptVariantSchema,
   creativeSpecSchema,
+  createShareLinkSchema,
   feedbackSchema,
   projectSchema,
 } from "@/lib/validators";
 import { PROJECT_STATUSES, SCRIPT_FORMATS } from "@/lib/constants";
 import type { ScriptFormat } from "@/lib/constants";
+import { logActivity } from "@/lib/activity";
 
 export async function createClientAction(input: {
   name: string;
@@ -43,6 +46,15 @@ export async function createClientAction(input: {
 
   if (insertError) throw insertError;
   if (!client) throw new Error("Failed to create client");
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "client.created",
+    entityType: "client",
+    entityId: client.id,
+    clientId: client.id,
+    metadata: { name: client.name },
+  });
   revalidatePath("/app");
   revalidatePath("/app/clients");
   return client;
@@ -73,6 +85,15 @@ export async function updateClientAction(input: {
     .eq("id", input.id)
     .eq("user_id", user.id);
   if (error) throw error;
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "client.updated",
+    entityType: "client",
+    entityId: input.id,
+    clientId: input.id,
+    metadata: { name: input.name },
+  });
   revalidatePath("/app/clients");
   revalidatePath(`/app/clients/${input.id}`);
 }
@@ -90,6 +111,14 @@ export async function deleteClientAction(clientId: string) {
     .eq("id", clientId)
     .eq("user_id", user.id);
   if (error) throw error;
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "client.deleted",
+    entityType: "client",
+    entityId: clientId,
+    clientId,
+  });
   revalidatePath("/app/clients");
   revalidatePath("/app");
 }
@@ -111,6 +140,14 @@ export async function updateBrandVoiceAction(input: {
     .eq("id", input.clientId)
     .eq("user_id", user.id);
   if (error) throw error;
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "client.brand_voice_updated",
+    entityType: "client",
+    entityId: input.clientId,
+    clientId: input.clientId,
+  });
   revalidatePath(`/app/clients/${input.clientId}`);
 }
 
@@ -144,6 +181,16 @@ export async function createProjectAction(input: {
 
   if (insertError) throw insertError;
   if (!project) throw new Error("Failed to create project");
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "project.created",
+    entityType: "project",
+    entityId: project.id,
+    projectId: project.id,
+    clientId: project.client_id,
+    metadata: { name: project.name },
+  });
   revalidatePath("/app");
   revalidatePath("/app/projects");
   return project;
@@ -165,6 +212,15 @@ export async function updateProjectStatusAction(input: {
     .eq("id", input.projectId)
     .eq("user_id", user.id);
   if (error) throw error;
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "project.status_changed",
+    entityType: "project",
+    entityId: input.projectId,
+    projectId: input.projectId,
+    metadata: { status: input.status },
+  });
   revalidatePath(`/app/projects/${input.projectId}`);
   revalidatePath("/app/projects");
 }
@@ -182,6 +238,14 @@ export async function deleteProjectAction(projectId: string) {
     .eq("id", projectId)
     .eq("user_id", user.id);
   if (error) throw error;
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "project.deleted",
+    entityType: "project",
+    entityId: projectId,
+    projectId,
+  });
   revalidatePath("/app/projects");
   revalidatePath("/app");
 }
@@ -210,6 +274,14 @@ export async function createBriefAction(input: {
 
   if (insertError) throw insertError;
   if (!brief) throw new Error("Failed to create brief");
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "brief.created",
+    entityType: "brief",
+    entityId: brief.id,
+    projectId: data.project_id,
+  });
   revalidatePath(`/app/projects/${data.project_id}`);
   return brief;
 }
@@ -231,14 +303,27 @@ export async function createFeedbackAction(input: {
   } = await supabase.auth.getUser();
   if (userError || !user) throw new Error("Not authenticated");
 
-  const { error } = await supabase.from("feedback").insert({
-    user_id: user.id,
-    project_id: data.project_id,
-    output_id: data.output_id ?? null,
-    text: data.text,
-  });
+  const { data: feedback, error } = await supabase
+    .from("feedback")
+    .insert({
+      user_id: user.id,
+      project_id: data.project_id,
+      output_id: data.output_id ?? null,
+      text: data.text,
+    })
+    .select("id")
+    .maybeSingle();
 
   if (error) throw error;
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "feedback.created",
+    entityType: "feedback",
+    entityId: feedback?.id ?? null,
+    projectId: data.project_id,
+    metadata: { output_id: data.output_id ?? null },
+  });
   revalidatePath(`/app/projects/${data.project_id}`);
 }
 
@@ -266,6 +351,15 @@ export async function setPrimaryOutputAction(input: {
     .eq("project_id", input.projectId)
     .eq("user_id", user.id);
   if (error) throw error;
+
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "output.primary_set",
+    entityType: "output",
+    entityId: input.outputId,
+    projectId: input.projectId,
+  });
 
   revalidatePath(`/app/projects/${input.projectId}`);
   revalidatePath(`/app/projects/${input.projectId}/export`);
@@ -343,6 +437,17 @@ export async function createDemoDataAction() {
     text: "Lean harder into the origin story and add a community angle.",
   });
 
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "demo_data.seeded",
+    entityType: "project",
+    entityId: project.id,
+    projectId: project.id,
+    clientId: client.id,
+    metadata: { name: project.name },
+  });
+
   revalidatePath("/app");
 }
 
@@ -404,6 +509,14 @@ export async function upsertCreativeSpecAction(input: {
 
   if (error) throw error;
   if (!spec) throw new Error("Failed to save creative spec");
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "creative_spec.saved",
+    entityType: "creative_spec",
+    entityId: spec.id,
+    projectId: parsed.project_id,
+  });
   revalidatePath(`/app/projects/${parsed.project_id}`);
   return spec;
 }
@@ -450,6 +563,14 @@ export async function createConceptAction(input: {
 
   if (error) throw error;
   if (!concept) throw new Error("Failed to create concept");
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "concept.created",
+    entityType: "concept",
+    entityId: concept.id,
+    projectId: parsed.project_id,
+  });
   revalidatePath(`/app/projects/${parsed.project_id}`);
   return concept;
 }
@@ -489,6 +610,15 @@ export async function batchCreateConceptsAction(input: {
 
   if (error) throw error;
   if (!concepts) throw new Error("Failed to create concepts");
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "concepts.imported",
+    entityType: "concept",
+    entityId: concepts[0]?.id ?? null,
+    projectId: parsed.project_id,
+    metadata: { count: concepts.length },
+  });
   revalidatePath(`/app/projects/${parsed.project_id}`);
   return concepts;
 }
@@ -524,6 +654,15 @@ export async function saveBriefUploadAction(input: {
 
   if (error) throw error;
   if (!upload) throw new Error("Failed to save brief upload");
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "brief_upload.saved",
+    entityType: "project_brief_upload",
+    entityId: upload.id,
+    projectId: input.projectId,
+    metadata: { filename: upload.filename },
+  });
   revalidatePath(`/app/projects/${input.projectId}`);
   return upload;
 }
@@ -595,6 +734,15 @@ export async function setActiveBriefUploadAction(input: {
     }
   }
 
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "brief_upload.active_set",
+    entityType: "project_brief_upload",
+    entityId: input.uploadId ?? null,
+    projectId: input.projectId,
+  });
+
   revalidatePath(`/app/projects/${input.projectId}`);
 }
 
@@ -640,6 +788,15 @@ export async function createScriptAction(input: {
 
   if (error) throw error;
   if (!script) throw new Error("Failed to create script");
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "script.created",
+    entityType: "script",
+    entityId: script.id,
+    projectId: input.projectId,
+    metadata: { format: script.format },
+  });
   revalidatePath(`/app/projects/${input.projectId}`);
   return script;
 }
@@ -676,6 +833,14 @@ export async function createConceptVariantAction(input: {
 
   if (error) throw error;
   if (!variant) throw new Error("Failed to create variant");
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "variant.created",
+    entityType: "concept_variant",
+    entityId: variant.id,
+    projectId: concept?.project_id ?? null,
+  });
   if (concept?.project_id) {
     revalidatePath(`/app/projects/${concept.project_id}`);
   }
@@ -709,6 +874,170 @@ export async function setPrimaryScriptAction(input: {
     .eq("user_id", user.id);
   if (error) throw error;
 
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "script.primary_set",
+    entityType: "script",
+    entityId: input.scriptId,
+    projectId: input.projectId,
+    metadata: { format: input.format },
+  });
+
   revalidatePath(`/app/projects/${input.projectId}`);
   revalidatePath(`/app/projects/${input.projectId}/pitch`);
+}
+
+export async function createShareLinkAction(input: {
+  projectId: string;
+  viewType?: "pitch" | "export";
+  label?: string | null;
+  expiresAt?: string | null;
+}) {
+  const parsed = createShareLinkSchema.parse({
+    project_id: input.projectId,
+    view_type: input.viewType ?? "pitch",
+    label: input.label ?? null,
+    expires_at: input.expiresAt ?? null,
+  });
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("id, client_id")
+    .eq("id", parsed.project_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!project) throw new Error("Project not found");
+
+  const expiresAt = parsed.expires_at ? new Date(parsed.expires_at) : null;
+  if (parsed.expires_at && Number.isNaN(expiresAt?.getTime())) {
+    throw new Error("Invalid expiration date");
+  }
+
+  const token = randomBytes(24).toString("base64url");
+  const { data: link, error } = await supabase
+    .from("share_links")
+    .insert({
+      user_id: user.id,
+      project_id: parsed.project_id,
+      token,
+      label: parsed.label?.trim() || null,
+      view_type: parsed.view_type,
+      expires_at: expiresAt ? expiresAt.toISOString() : null,
+      is_active: true,
+    })
+    .select()
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!link) throw new Error("Failed to create share link");
+
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "share_link.created",
+    entityType: "share_link",
+    entityId: link.id,
+    projectId: parsed.project_id,
+    clientId: project.client_id,
+    metadata: { view_type: link.view_type, label: link.label, expires_at: link.expires_at },
+  });
+
+  revalidatePath(`/app/projects/${parsed.project_id}`);
+  return link;
+}
+
+export async function revokeShareLinkAction(input: { shareLinkId: string }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
+
+  const { data: link } = await supabase
+    .from("share_links")
+    .select("id, project_id, view_type")
+    .eq("id", input.shareLinkId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!link) throw new Error("Share link not found");
+
+  const { error } = await supabase
+    .from("share_links")
+    .update({ is_active: false })
+    .eq("id", input.shareLinkId)
+    .eq("user_id", user.id);
+
+  if (error) throw error;
+
+  void logActivity({
+    supabase,
+    userId: user.id,
+    action: "share_link.revoked",
+    entityType: "share_link",
+    entityId: link.id,
+    projectId: link.project_id,
+    metadata: { view_type: link.view_type },
+  });
+
+  revalidatePath(`/app/projects/${link.project_id}`);
+}
+
+export async function listShareLinksAction(input: { projectId: string }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
+
+  const { data, error } = await supabase
+    .from("share_links")
+    .select("*")
+    .eq("project_id", input.projectId)
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function listProjectActivityAction(input: {
+  projectId: string;
+  offset?: number;
+  limit?: number;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
+
+  const limit = Math.min(Math.max(input.limit ?? 20, 1), 50);
+  const offset = Math.max(input.offset ?? 0, 0);
+  const end = offset + limit;
+
+  const { data, error } = await supabase
+    .from("activity_log")
+    .select("*")
+    .eq("project_id", input.projectId)
+    .order("created_at", { ascending: false })
+    .range(offset, end);
+
+  if (error) throw error;
+
+  const events = (data ?? []).slice(0, limit);
+  return { events, hasMore: (data ?? []).length > limit };
 }

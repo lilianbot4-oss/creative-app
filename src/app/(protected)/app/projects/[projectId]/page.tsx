@@ -12,10 +12,11 @@ import {
   listConceptAssetsByProject,
   listBriefUploads,
   getStoryboard,
+  getProjectActivity,
 } from "@/lib/data";
 import { getResolvedAISettings } from "@/lib/ai/settings";
 import ProjectWorkspace from "@/components/project/project-workspace";
-import type { Client, Project, ConceptVariant, Storyboard } from "@/lib/types";
+import type { Client, Project, ConceptVariant, Storyboard, ShareLink } from "@/lib/types";
 
 interface ProjectPageProps {
   params: Promise<{ projectId: string }>;
@@ -23,9 +24,10 @@ interface ProjectPageProps {
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { projectId } = await params;
+  const supabase = await createClient();
+  const ACTIVITY_PAGE_SIZE = 20;
   let project: (Project & { client: Client | null }) | null = null;
   try {
-    const supabase = await createClient();
     const { data } = await supabase
       .from("projects")
       .select("*, client:clients(*)")
@@ -52,6 +54,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     aiSettings,
     briefUploads,
     conceptAssets,
+    activityRows,
+    shareLinksResult,
   ] =
     await Promise.all([
       getLatestBrief(projectId),
@@ -64,7 +68,22 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       getResolvedAISettings(projectId),
       listBriefUploads(projectId),
       listConceptAssetsByProject(projectId),
+      getProjectActivity(projectId, { limit: ACTIVITY_PAGE_SIZE + 1 }),
+      supabase
+        .from("share_links")
+        .select("*")
+        .eq("project_id", projectId)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false }),
     ]);
+
+  if (shareLinksResult.error) {
+    throw shareLinksResult.error;
+  }
+
+  const shareLinks = (shareLinksResult.data ?? []) as ShareLink[];
+  const activityEvents = activityRows.slice(0, ACTIVITY_PAGE_SIZE);
+  const activityHasMore = activityRows.length > ACTIVITY_PAGE_SIZE;
 
   const variantsByConceptEntries = await Promise.all(
     concepts.map(async (concept) => {
@@ -97,12 +116,15 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       briefUploads={briefUploads}
       outputs={outputs}
       feedback={feedback}
+      activityEvents={activityEvents}
+      activityHasMore={activityHasMore}
       references={references}
       concepts={concepts}
       assetsByConcept={assetsByConcept}
       variantsByConcept={variantsByConcept}
       scripts={scripts}
       storyboardsByScript={storyboardsByScript}
+      shareLinks={shareLinks}
       aiSettings={aiSettings}
       aiEnabled={Boolean(
         process.env.OPENAI_API_KEY ||

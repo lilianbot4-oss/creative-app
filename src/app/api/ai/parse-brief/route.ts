@@ -7,6 +7,7 @@ import { parseBriefSchema } from "@/lib/validators";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
 import { getResolvedAISettings } from "@/lib/ai/settings";
 import { DEFAULT_TEXT_MODEL } from "@/lib/ai/models";
+import { logActivity } from "@/lib/activity";
 
 export async function POST(request: Request) {
   try {
@@ -100,6 +101,16 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    void logActivity({
+      supabase,
+      userId: user.id,
+      action: "ai.brief_parsed",
+      entityType: "brief",
+      entityId: brief.id,
+      projectId: brief.project_id,
+      metadata: { summary_keys: Object.keys(json as Record<string, unknown>).length },
+    });
 
     return NextResponse.json({ parsed_summary: json });
   } catch {

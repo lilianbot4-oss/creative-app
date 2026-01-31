@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
 import { getResolvedAISettings } from "@/lib/ai/settings";
 import { DEFAULT_IMAGE_PROVIDER, ImageProvider } from "@/lib/ai/models";
+import { logActivity } from "@/lib/activity";
 
 export const runtime = "nodejs";
 
@@ -252,6 +253,21 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    void logActivity({
+      supabase,
+      userId: user.id,
+      action: "ai.images_generated",
+      entityType: "reference",
+      entityId: createdReferences[0]?.id ?? null,
+      projectId,
+      metadata: {
+        count: createdReferences.length,
+        style: style ?? null,
+        provider,
+        model: settings.image_model,
+      },
+    });
 
     return NextResponse.json({
       references: createdReferences,

@@ -13,6 +13,7 @@ import { buildParseImportIdeasPrompt } from "@/lib/ai/prompts/parseImportIdeas";
 import { enforceUsageLimit, estimateTokensFromText } from "@/lib/ai/usage";
 import { getResolvedAISettings } from "@/lib/ai/settings";
 import { DEFAULT_TEXT_MODEL } from "@/lib/ai/models";
+import { logActivity } from "@/lib/activity";
 
 export async function POST(request: Request) {
   try {
@@ -111,6 +112,16 @@ export async function POST(request: Request) {
         description: item.description ?? "",
         original_text: item.original_text ?? "",
       }));
+
+    void logActivity({
+      supabase,
+      userId: user.id,
+      action: "ai.ideas_parsed",
+      entityType: "idea",
+      entityId: null,
+      projectId: parsed.data.projectId,
+      metadata: { count: ideas.length },
+    });
 
     return NextResponse.json({ ideas });
   } catch (error) {
