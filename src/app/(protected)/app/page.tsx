@@ -27,34 +27,39 @@ export default async function DashboardPage() {
       label: "Total Clients",
       value: clientCount,
       icon: Users,
-      tone: "text-primary bg-primary/10 border-primary/20",
+      tone: "text-primary-foreground bg-primary border-border",
     },
     {
       label: "Active Projects",
       value: projectCount,
       icon: FolderKanban,
-      tone: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20",
+      tone: "text-secondary-foreground bg-secondary border-border",
     },
     {
       label: "Campaign Outputs",
       value: outputCount,
       icon: Sparkles,
-      tone: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
+      tone: "text-accent-foreground bg-accent border-border",
     },
   ];
 
   return (
     <div className="mx-auto max-w-6xl space-y-10">
-      <div className="flex flex-wrap items-end justify-between gap-6">
-        <div className="space-y-1">
-          <h2 className="text-3xl font-bold tracking-tight">Welcome back</h2>
-          <p className="text-muted-foreground">
-            Here&apos;s what&apos;s happening with your creative campaigns.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <CreateClientDialog />
-          <CreateProjectDialog clients={clients} />
+      <div className="border-2 border-border bg-card p-6">
+        <div className="flex flex-wrap items-center justify-between gap-6">
+          <div className="space-y-2">
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-muted-foreground">
+              Campaign Command
+            </p>
+            <h2 className="text-4xl font-bold tracking-tight">Welcome back</h2>
+            <p className="text-sm text-muted-foreground">
+              Here&apos;s what&apos;s happening with your creative campaigns.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <CreateProjectDialog clients={clients} />
+            <CreateClientDialog />
+          </div>
         </div>
       </div>
 
@@ -62,11 +67,11 @@ export default async function DashboardPage() {
         {stats.map((stat) => (
           <Card
             key={stat.label}
-            className="transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_20px_45px_-35px] hover:shadow-primary/50"
+            className="border-2 border-border"
           >
             <CardContent className="flex items-center gap-4 p-6">
               <div
-                className={`flex h-12 w-12 items-center justify-center rounded-2xl border ${stat.tone}`}
+                className={`flex h-12 w-12 items-center justify-center rounded-none border-2 ${stat.tone}`}
               >
                 <stat.icon size={24} />
               </div>
@@ -93,9 +98,9 @@ export default async function DashboardPage() {
           </div>
 
           {recentProjects.length === 0 ? (
-            <Card className="border-dashed border-border/60 bg-transparent">
+            <Card className="border-2 border-dashed border-border bg-transparent">
               <CardContent className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted/30">
+                <div className="flex h-16 w-16 items-center justify-center rounded-none border-2 border-border bg-muted">
                   <FolderKanban size={32} className="text-muted-foreground/60" />
                 </div>
                 <div className="space-y-1">
@@ -113,7 +118,7 @@ export default async function DashboardPage() {
                 <Link
                   key={project.id}
                   href={`/app/projects/${project.id}`}
-                  className="group flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border/50 bg-card/80 p-5 transition-all hover:translate-x-1 hover:border-primary/30 hover:shadow-[0_16px_35px_-28px] hover:shadow-primary/40"
+                  className="group flex flex-wrap items-center justify-between gap-4 rounded-none border-2 border-border bg-card p-5 hover:bg-muted"
                 >
                   <div className="space-y-1">
                     <p className="font-bold group-hover:text-primary transition-colors">{project.name}</p>
@@ -127,7 +132,7 @@ export default async function DashboardPage() {
                       </span>
                     </div>
                   </div>
-                  <Button size="icon" variant="ghost" className="rounded-full bg-background/60 opacity-0 group-hover:opacity-100 transition-all">
+                  <Button size="icon" variant="ghost" className="rounded-none bg-background opacity-100">
                     <ArrowRight size={18} />
                   </Button>
                 </Link>
@@ -153,9 +158,9 @@ export default async function DashboardPage() {
 
             <Link
               href="/app/help"
-              className="flex items-center gap-3 rounded-2xl border border-border/50 bg-card/80 p-4 transition-all hover:border-primary/30 hover:shadow-[0_16px_35px_-28px] hover:shadow-primary/40"
+              className="flex items-center gap-3 rounded-none border-2 border-border bg-card p-4 hover:bg-muted"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+              <div className="flex h-10 w-10 items-center justify-center rounded-none border-2 border-border bg-accent text-accent-foreground">
                 <HelpCircle size={20} />
               </div>
               <div>

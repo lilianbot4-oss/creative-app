@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Space_Grotesk, Source_Sans_3 } from "next/font/google";
+import { IBM_Plex_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import ThemeProvider from "@/components/theme-provider";
 
-const displayFont = Space_Grotesk({
-  variable: "--font-space",
+const bodyFont = Plus_Jakarta_Sans({
+  variable: "--font-body",
+  weight: ["300", "400", "500", "600", "700"],
   subsets: ["latin"],
 });
 
-const bodyFont = Source_Sans_3({
-  variable: "--font-body",
+const displayFont = Plus_Jakarta_Sans({
+  variable: "--font-space",
+  weight: ["500", "600", "700", "800"],
   subsets: ["latin"],
 });
 

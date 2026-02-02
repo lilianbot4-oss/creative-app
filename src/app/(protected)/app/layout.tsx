@@ -16,15 +16,15 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
-      <aside className="no-print border-r border-border/60 bg-card/70 backdrop-blur-xl">
+      <aside className="no-print border-r-2 border-border bg-card">
         <div className="relative h-full">
-          <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-border" />
           <Sidebar userEmail={user.email} />
         </div>
       </aside>
       <div className="flex min-h-screen flex-col">
-        <header className="no-print relative z-10 flex items-center justify-between border-b border-border/60 bg-background/80 px-6 py-4 backdrop-blur-xl">
-          <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+        <header className="no-print relative z-10 flex items-center justify-between border-b-2 border-border bg-background px-6 py-4">
+          <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-border" />
           <div className="space-y-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
               Creative Copilot
