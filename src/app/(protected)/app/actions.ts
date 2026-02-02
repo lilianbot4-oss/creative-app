@@ -337,19 +337,11 @@ export async function setPrimaryOutputAction(input: {
     error: userError,
   } = await supabase.auth.getUser();
   if (userError || !user) throw new Error("Not authenticated");
-  const { error: resetError } = await supabase
-    .from("outputs")
-    .update({ is_primary: false })
-    .eq("project_id", input.projectId)
-    .eq("user_id", user.id);
-  if (resetError) throw resetError;
-
-  const { error } = await supabase
-    .from("outputs")
-    .update({ is_primary: true })
-    .eq("id", input.outputId)
-    .eq("project_id", input.projectId)
-    .eq("user_id", user.id);
+  const { error } = await supabase.rpc("set_primary_output", {
+    p_project_id: input.projectId,
+    p_output_id: input.outputId,
+    p_user_id: user.id,
+  });
   if (error) throw error;
 
   void logActivity({
@@ -527,17 +519,11 @@ export async function createConceptAction(input: {
   one_liner?: string | null;
   thesis?: string | null;
   product_integration?: string | null;
-  doordash_integration?: string | null;
   scalability?: string | null;
   origin_type?: "human" | "ai_assisted" | "ai_generated";
   seed_text?: string | null;
 }) {
-  const normalized = {
-    ...input,
-    product_integration:
-      input.product_integration ?? input.doordash_integration ?? null,
-  };
-  const parsed = conceptSchema.parse(normalized);
+  const parsed = conceptSchema.parse(input);
   const supabase = await createClient();
   const {
     data: { user },
@@ -858,20 +844,12 @@ export async function setPrimaryScriptAction(input: {
     error: userError,
   } = await supabase.auth.getUser();
   if (userError || !user) throw new Error("Not authenticated");
-  const { error: resetError } = await supabase
-    .from("scripts")
-    .update({ is_primary: false })
-    .eq("project_id", input.projectId)
-    .eq("format", input.format)
-    .eq("user_id", user.id);
-  if (resetError) throw resetError;
-
-  const { error } = await supabase
-    .from("scripts")
-    .update({ is_primary: true })
-    .eq("id", input.scriptId)
-    .eq("project_id", input.projectId)
-    .eq("user_id", user.id);
+  const { error } = await supabase.rpc("set_primary_script", {
+    p_project_id: input.projectId,
+    p_script_id: input.scriptId,
+    p_format: input.format,
+    p_user_id: user.id,
+  });
   if (error) throw error;
 
   void logActivity({

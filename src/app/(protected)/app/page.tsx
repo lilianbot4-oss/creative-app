@@ -23,9 +23,24 @@ export default async function DashboardPage() {
   const recentProjects = projects.slice(0, 5);
 
   const stats = [
-    { label: "Total Clients", value: clientCount, icon: Users, color: "text-blue-500" },
-    { label: "Active Projects", value: projectCount, icon: FolderKanban, color: "text-purple-500" },
-    { label: "Campaign Outputs", value: outputCount, icon: Sparkles, color: "text-amber-500" },
+    {
+      label: "Total Clients",
+      value: clientCount,
+      icon: Users,
+      tone: "text-primary bg-primary/10 border-primary/20",
+    },
+    {
+      label: "Active Projects",
+      value: projectCount,
+      icon: FolderKanban,
+      tone: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20",
+    },
+    {
+      label: "Campaign Outputs",
+      value: outputCount,
+      icon: Sparkles,
+      tone: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
+    },
   ];
 
   return (
@@ -45,9 +60,14 @@ export default async function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         {stats.map((stat) => (
-          <Card key={stat.label} className="border-border/40 bg-card/40 backdrop-blur-sm transition-all hover:border-border/80">
+          <Card
+            key={stat.label}
+            className="transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_20px_45px_-35px] hover:shadow-primary/50"
+          >
             <CardContent className="flex items-center gap-4 p-6">
-              <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-background shadow-sm border border-border/40 ${stat.color}`}>
+              <div
+                className={`flex h-12 w-12 items-center justify-center rounded-2xl border ${stat.tone}`}
+              >
                 <stat.icon size={24} />
               </div>
               <div>
@@ -93,12 +113,12 @@ export default async function DashboardPage() {
                 <Link
                   key={project.id}
                   href={`/app/projects/${project.id}`}
-                  className="group flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border/40 bg-card/40 p-5 backdrop-blur-sm transition-all hover:translate-x-1 hover:border-primary/20 hover:bg-card/60"
+                  className="group flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border/50 bg-card/80 p-5 transition-all hover:translate-x-1 hover:border-primary/30 hover:shadow-[0_16px_35px_-28px] hover:shadow-primary/40"
                 >
                   <div className="space-y-1">
                     <p className="font-bold group-hover:text-primary transition-colors">{project.name}</p>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-muted/50 text-muted-foreground">
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-muted/60 text-muted-foreground">
                         {project.client?.name ?? "Internal"}
                       </span>
                       <span className="text-[10px] text-muted-foreground/60">•</span>
@@ -107,7 +127,7 @@ export default async function DashboardPage() {
                       </span>
                     </div>
                   </div>
-                  <Button size="icon" variant="ghost" className="rounded-full bg-background/40 opacity-0 group-hover:opacity-100 transition-all">
+                  <Button size="icon" variant="ghost" className="rounded-full bg-background/60 opacity-0 group-hover:opacity-100 transition-all">
                     <ArrowRight size={18} />
                   </Button>
                 </Link>
@@ -119,7 +139,7 @@ export default async function DashboardPage() {
         <div className="space-y-4">
           <h3 className="text-xl font-bold tracking-tight">Quick Actions</h3>
           <div className="grid gap-3">
-            <Card className="border-border/40 bg-card/40 backdrop-blur-sm">
+            <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm">Get Started</CardTitle>
               </CardHeader>
@@ -133,9 +153,9 @@ export default async function DashboardPage() {
 
             <Link
               href="/app/help"
-              className="flex items-center gap-3 rounded-2xl border border-border/40 bg-card/40 p-4 transition-all hover:bg-card/60"
+              className="flex items-center gap-3 rounded-2xl border border-border/50 bg-card/80 p-4 transition-all hover:border-primary/30 hover:shadow-[0_16px_35px_-28px] hover:shadow-primary/40"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
                 <HelpCircle size={20} />
               </div>
               <div>

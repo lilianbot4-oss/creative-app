@@ -269,8 +269,6 @@ create table if not exists public.concepts (
   thesis text,
   share_triggers jsonb,
   product_integration text,
-  -- Deprecated: keep doordash_integration for backwards compatibility.
-  doordash_integration text,
   cast_archetypes jsonb,
   beats jsonb,
   risks jsonb,
@@ -278,7 +276,6 @@ create table if not exists public.concepts (
   created_at timestamptz default now()
 );
 
-alter table public.concepts add column if not exists doordash_integration text;
 alter table public.concepts add column if not exists product_integration text;
 
 create index if not exists concepts_project_idx on public.concepts (project_id);
@@ -577,24 +574,9 @@ create policy "Concept assets are deletable by owner" on public.concept_assets
 -- Run the statements below in the Supabase SQL Editor to apply the latest schema updates.
 -- All statements are intended to be safe to run on an existing database (idempotent).
 
--- Deprecated: keep doordash_integration for backwards compatibility.
-alter table public.concepts
-  add column if not exists product_integration text;
-
-do $$
-begin
-  if exists (
-    select 1
-    from information_schema.columns
-    where table_schema = 'public'
-      and table_name = 'concepts'
-      and column_name = 'doordash_integration'
-  ) then
-    update public.concepts
-    set product_integration = coalesce(product_integration, doordash_integration)
-    where doordash_integration is not null;
-  end if;
-end $$;
+-- product_integration column already exists from table definition.
+-- doordash_integration data has been migrated and column dropped.
+alter table public.concepts drop column if exists doordash_integration;
 
 -- PHASE 7+ IMPORT IDEAS + LINEAGE TRACKING
 -- Run the statements below in the Supabase SQL Editor to apply the latest schema updates.
@@ -667,3 +649,57 @@ create policy "Activity log is viewable by owner" on public.activity_log
   for select using (auth.uid() = user_id);
 create policy "Activity log is insertable by owner" on public.activity_log
   for insert with check (auth.uid() = user_id);
+
+create index if not exists activity_log_user_created_idx
+  on public.activity_log (user_id, created_at desc);
+
+-- PHASE 9+ ATOMIC PRIMARY-FLAG RPC FUNCTIONS
+-- These functions wrap the reset-then-set pattern in a single transaction
+-- to prevent race conditions when setting primary outputs/scripts/assets.
+
+create or replace function public.set_primary_output(
+  p_project_id uuid,
+  p_output_id uuid,
+  p_user_id uuid
+) returns void language plpgsql security definer as $$
+begin
+  update public.outputs set is_primary = false
+    where project_id = p_project_id and user_id = p_user_id and is_primary = true;
+  update public.outputs set is_primary = true
+    where id = p_output_id and project_id = p_project_id and user_id = p_user_id;
+end;
+$$;
+
+create or replace function public.set_primary_script(
+  p_project_id uuid,
+  p_script_id uuid,
+  p_format text,
+  p_user_id uuid
+) returns void language plpgsql security definer as $$
+begin
+  update public.scripts set is_primary = false
+    where project_id = p_project_id and format = p_format and user_id = p_user_id and is_primary = true;
+  update public.scripts set is_primary = true
+    where id = p_script_id and project_id = p_project_id and user_id = p_user_id;
+end;
+$$;
+
+create or replace function public.set_primary_asset(
+  p_asset_id uuid,
+  p_user_id uuid
+) returns void language plpgsql security definer as $$
+declare
+  v_concept_id uuid;
+  v_asset_type text;
+begin
+  select concept_id, asset_type into v_concept_id, v_asset_type
+    from public.concept_assets where id = p_asset_id and user_id = p_user_id;
+  if v_concept_id is null then
+    raise exception 'Asset not found or not linked to a concept';
+  end if;
+  update public.concept_assets set is_primary = false
+    where concept_id = v_concept_id and asset_type = v_asset_type and is_primary = true;
+  update public.concept_assets set is_primary = true
+    where id = p_asset_id;
+end;
+$$;

@@ -27,25 +27,28 @@ export default function Sidebar({ userEmail }: { userEmail?: string | null }) {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full flex-col gap-8 p-6">
+    <div className="flex h-full flex-col gap-8 px-6 py-8">
       <div className="space-y-4">
-        <div className="flex items-center gap-2 px-1">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+        <div className="flex items-center gap-3 px-1">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-primary/30 bg-primary/15 text-primary shadow-[0_10px_30px_-20px] shadow-primary/60">
             <Sparkles size={18} />
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/80">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
               Creative Copilot
             </p>
-            <h2 className="text-xl font-bold tracking-tight">Workspace</h2>
+            <h2 className="text-xl font-semibold tracking-tight">Workspace</h2>
           </div>
         </div>
-        <Badge variant="secondary" className="ml-1 w-fit px-2 py-0 text-[10px] font-bold uppercase tracking-wider">
+        <Badge
+          variant="secondary"
+          className="ml-1 w-fit border border-primary/20 bg-primary/10 px-3 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary"
+        >
           Pro Member
         </Badge>
       </div>
 
-      <nav className="space-y-1 text-sm">
+      <nav className="space-y-2 text-sm">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== "/app" && pathname?.startsWith(item.href));
           return (
@@ -53,10 +56,10 @@ export default function Sidebar({ userEmail }: { userEmail?: string | null }) {
               key={item.href}
               href={item.href}
               className={cn(
-                "group flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 transition-all duration-200",
-                isActive 
-                  ? "bg-primary/5 text-primary border-primary/10 shadow-sm" 
-                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                "group flex items-center gap-3 rounded-2xl border px-3 py-2.5 transition-all duration-200",
+                isActive
+                  ? "border-primary/30 bg-primary/10 text-foreground shadow-[0_12px_30px_-22px] shadow-primary/60"
+                  : "border-transparent text-muted-foreground hover:border-border/60 hover:bg-card/60 hover:text-foreground"
               )}
             >
               <item.icon 
@@ -72,15 +75,15 @@ export default function Sidebar({ userEmail }: { userEmail?: string | null }) {
         })}
       </nav>
 
-      <Separator className="opacity-50" />
+      <Separator className="opacity-60" />
 
       <div className="mt-auto space-y-4">
-        <div className="rounded-2xl border border-border/40 bg-muted/30 p-4">
+        <div className="rounded-2xl border border-border/60 bg-card/70 p-4 shadow-[0_12px_30px_-24px] shadow-primary/40">
           <div className="mb-3 space-y-1">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
               Account
             </p>
-            <p className="truncate text-sm font-semibold text-foreground/90">
+            <p className="truncate text-sm font-semibold text-foreground">
               {userEmail ?? ""}
             </p>
           </div>

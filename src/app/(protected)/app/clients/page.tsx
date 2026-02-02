@@ -24,7 +24,7 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold">Clients</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Clients</h2>
           <p className="text-sm text-muted-foreground">
             Set up client brands and voice guidelines for consistent outputs.
           </p>

@@ -13,11 +13,7 @@ type KeyVisualInput = {
 
 export function buildKeyVisualPrompt(input: KeyVisualInput) {
   const guardrails = buildGuardrails(input.creativeSpec ?? null);
-  const legacyIntegration =
-    (input.concept as { doordash_integration?: string | null } | null)
-      ?.doordash_integration ?? null;
-  const integration =
-    input.concept?.product_integration ?? legacyIntegration ?? null;
+  const integration = input.concept?.product_integration ?? null;
   const conceptBlock = input.concept
     ? [
         `Concept: ${input.concept.title}`,

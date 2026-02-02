@@ -40,10 +40,7 @@ export default function KeyVisualGenerator({
   const [pendingAssets, setPendingAssets] = useState<ConceptAsset[]>([]);
 
   const defaultPrompt = useMemo(() => {
-    const integration =
-      concept.product_integration ??
-      (concept as { doordash_integration?: string | null }).doordash_integration ??
-      null;
+    const integration = concept.product_integration ?? null;
     const parts = [
       concept.title,
       concept.one_liner,

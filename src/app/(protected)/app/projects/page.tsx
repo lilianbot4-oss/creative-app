@@ -28,7 +28,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold">Projects</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Projects</h2>
           <p className="text-sm text-muted-foreground">
             Track all active and archived client projects.
           </p>

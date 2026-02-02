@@ -375,10 +375,7 @@ export default function ConceptsPanel({
             const variants = variantsByConcept[concept.id] ?? [];
             const origin = concept.origin_type ?? "human";
             const assets = assetsByConcept[concept.id] ?? [];
-            const integration =
-              concept.product_integration ??
-              (concept as { doordash_integration?: string | null }).doordash_integration ??
-              null;
+            const integration = concept.product_integration ?? null;
             const primaryAsset = assets.find(
               (asset) => asset.is_primary && asset.asset_type === "key_visual"
             );
