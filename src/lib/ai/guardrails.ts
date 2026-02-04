@@ -29,7 +29,7 @@ export function buildGuardrails(spec?: CreativeSpec | null, brandVoice?: BrandVo
       "Creative constraints (must follow strictly):",
       spec.key_message ? `Key message: ${spec.key_message}` : null,
       spec.audience ? `Audience: ${spec.audience}` : null,
-    ].filter(Boolean);
+    ].filter(Boolean) as string[];
 
     const deliverables =
       spec.deliverables?.map((item) =>
