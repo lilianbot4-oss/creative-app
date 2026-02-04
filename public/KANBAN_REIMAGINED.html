@@ -229,7 +229,7 @@
     </header>
 
     <div class="kanban-board">
-
+        
         <div class="column">
             <div class="column-header">
                 <span class="column-title">🎯 🎯 TOP PRIORITIES</span>
@@ -499,121 +499,14 @@
         </div>
     
     </div>
-            <div class="task-list">
-                <div class="card urgent">
-                    <div class="card-title">Prep for Ambience Healthcare Phone Screen</div>
-                    <div class="card-meta"><span>Wed @ 10:00 AM</span><span class="tag">INTERVIEW</span></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">Update Zapier MCP for Zoom/Calendar</div>
-                    <div class="card-meta"><span>Real links</span><span class="tag">DEV</span></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">Tailor Resume for Maven Clinic Staff PM Role</div>
-                    <div class="card-meta"><span>Doc</span><span class="tag">CAREER</span></div>
-                </div>
-                <div class="card urgent">
-                    <div class="card-title">Follow up with Dan Greenberg</div>
-                    <div class="card-meta"><span>Thu 12:00 PM ET</span><span class="tag">NETWORKING</span></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Job Search Pipe -->
-        <div class="column" id="pipeline">
-            <div class="column-header">
-                <span class="column-title">📋 JOB PIPELINE</span>
-                <span>3</span>
-            </div>
-            <div class="task-list">
-                <div class="card done">
-                    <div class="card-title">SmarterDx - Sr. Product Manager, AI/ML</div>
-                    <div class="card-meta"><span>Remote</span><span class="tag">APPLIED</span></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">IMO Health - Product Owner, Clinical AI</div>
-                    <div class="card-meta"><span>Remote</span><span class="tag">TO APPLY</span></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">CareMessage - Sr. Product Manager</div>
-                    <div class="card-meta"><span>Data & Interop</span><span class="tag">TO APPLY</span></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tonight's Mission -->
-        <div class="column" id="mission">
-            <div class="column-header">
-                <span class="column-title">🛠️ TONIGHT'S MISSION</span>
-                <span>5</span>
-            </div>
-            <div class="task-list">
-                <div class="card">
-                    <div class="card-title">Coding: Implement AI storyboard visuals</div>
-                    <div class="card-meta"><span>creative-app</span><span class="tag">CODE</span></div>
-                </div>
-                <div class="card urgent">
-                    <div class="card-title">Security: Full Audit</div>
-                    <div class="card-meta"><span>Ports, API Budgets</span><span class="tag">SEC</span></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">Research: Ambience "Clinician Success" Intel</div>
-                    <div class="card-meta"><span>Polish</span><span class="tag">RESEARCH</span></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">A/B Test: Gemini 3 Pro vs. Kimi k2.5</div>
-                    <div class="card-meta"><span>Coding Analysis</span><span class="tag">TEST</span></div>
-                </div>
-                 <div class="card done">
-                    <div class="card-title">Design: Kimi k2.5 Kanban UI Redesign</div>
-                    <div class="card-meta"><span>DONE</span><span class="tag">META</span></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Intel & Monitoring -->
-        <div class="column">
-            <div class="column-header">
-                <span class="column-title">🧠 INTEL & MONITOR</span>
-                <span>2</span>
-            </div>
-            <div class="task-list">
-                <div class="card monitor">
-                    <div class="card-title">Monitor Twitter: OpenClaw & Clinical AI</div>
-                    <div class="card-meta"><span>Daily</span><span class="tag">INTEL</span></div>
-                </div>
-                <div class="card monitor">
-                    <div class="card-title">System Hardening & Security Audit</div>
-                    <div class="card-meta"><span>Daily @ 1AM ET</span><span class="tag">SEC</span></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Family -->
-        <div class="column">
-            <div class="column-header">
-                <span class="column-title">🍼 FAMILY BASE</span>
-                <span>2</span>
-            </div>
-            <div class="task-list">
-                <div class="card">
-                    <div class="card-title">Abigail's Milestones Log</div>
-                    <div class="card-meta"><span>Log</span><span class="tag">FAMILY</span></div>
-                </div>
-                <div class="card">
-                    <div class="card-title">Emily's "Not a Threat" Check-in</div>
-                    <div class="card-meta"><span>Weekly</span><span class="tag">RELATIONSHIP</span></div>
-                </div>
-            </div>
-        </div>
-
-    </div>
 
     <footer>
         SYS_TIME: <span id="clock">--:--:--</span> | Kimi k2.5 Rendering Engine | <a href="https://telegra.ph/Ians-Mission-Control-Archive-02-03" style="color: var(--text-dim);">ARCHIVE ACCESS</a>
     </footer>
 
     <script>
+        const SYNC_ENDPOINT = 'https://tall-webs-drum.loca.lt/update';
+
         // Simple Clock
         function updateClock() {
             const now = new Date();
@@ -622,7 +515,7 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Drag and Drop Logic (Basic)
+        // Drag and Drop Logic
         const cards = document.querySelectorAll('.card');
         const lists = document.querySelectorAll('.task-list');
 
@@ -630,8 +523,19 @@
             card.addEventListener('dragstart', () => {
                 card.classList.add('dragging');
             });
-            card.addEventListener('dragend', () => {
+            card.addEventListener('dragend', async () => {
                 card.classList.remove('dragging');
+                
+                // Mark as done if in Done column
+                const parentCol = card.closest('.column');
+                const colTitle = parentCol.querySelector('.column-title').innerText.toUpperCase();
+                if (colTitle.includes('DONE')) {
+                    card.classList.add('done');
+                } else {
+                    card.classList.remove('done');
+                }
+                
+                await saveState();
             });
             card.setAttribute('draggable', true);
         });
@@ -660,6 +564,43 @@
                     return closest;
                 }
             }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        async function saveState() {
+            const sections = [];
+            document.querySelectorAll('.column').forEach(col => {
+                const titleText = col.querySelector('.column-title').innerText;
+                const title = titleText.replace(/^[^\s]+\s/, '').trim();
+                const tasks = [];
+                col.querySelectorAll('.card').forEach(card => {
+                    const taskTitle = card.querySelector('.card-title').innerText;
+                    const meta = card.querySelector('.card-meta span:first-child').innerText;
+                    const done = card.classList.contains('done');
+                    tasks.push({ title: taskTitle, meta, done });
+                });
+                sections.push({ title, tasks });
+            });
+
+            const badge = document.querySelector('.status-badge');
+            badge.innerText = 'SYNCING...';
+            badge.style.borderColor = '#00b8ff';
+
+            try {
+                const res = await fetch(SYNC_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sections })
+                });
+                if (res.ok) {
+                    badge.innerText = 'SYNCED';
+                    badge.style.borderColor = '#00ff9d';
+                    setTimeout(() => { badge.innerText = 'DEFCON 3'; badge.style.borderColor = ''; }, 2000);
+                }
+            } catch (e) {
+                badge.innerText = 'SYNC ERR';
+                badge.style.borderColor = '#ff0055';
+                console.error('Sync failed', e);
+            }
         }
     </script>
 </body>
