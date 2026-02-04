@@ -12,8 +12,9 @@ export function buildGenerateStoryboardPrompt(options: {
 
   const userPrompt = [
     "Return a JSON object with:",
-    "frames: array of 8-12 objects with fields {frame, shot, setting, action, os_text, audio, props}",
+    "frames: array of 8-12 objects with fields {frame, shot, setting, action, visual_prompt, os_text, audio, props}",
     "shotlist: object with fields {by_location: [], by_cast: [], props: []}",
+    "Note: 'visual_prompt' should be a detailed description of the frame's visual content, suitable for an image generation AI, incorporating the brand style if provided.",
     guardrails ? "Constraints:" : null,
     guardrails,
     "Script:",

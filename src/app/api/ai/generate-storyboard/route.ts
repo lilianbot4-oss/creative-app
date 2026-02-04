@@ -118,6 +118,7 @@ export async function POST(request: Request) {
           shot: string;
           setting: string;
           action: string;
+          visual_prompt: string;
           os_text?: string | null;
           audio?: string | null;
           props?: string[] | null;

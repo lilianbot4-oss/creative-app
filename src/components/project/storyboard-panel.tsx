@@ -127,7 +127,7 @@ export default function StoryboardPanel({
         for (const frame of data.storyboard.frames) {
            // eslint-disable-next-line @typescript-eslint/no-explicit-any
            const frameData = frame as any;
-           await handleGenerateFrame(frameData.frame, `${frameData.setting}, ${frameData.action}`);
+           await handleGenerateFrame(frameData.frame, frameData.visual_prompt || `${frameData.setting}, ${frameData.action}`);
         }
         toast.success("All visuals generated");
       }
@@ -230,7 +230,7 @@ export default function StoryboardPanel({
                              <Button
                                 size="sm"
                                 variant="secondary"
-                                onClick={() => handleGenerateFrame(frame.frame, `${frame.setting}, ${frame.action}`)}
+                                onClick={() => handleGenerateFrame(frame.frame, (frame as any).visual_prompt || `${frame.setting}, ${frame.action}`)}
                                 disabled={isGeneratingThis || !imageModel}
                               >
                                 {isGeneratingThis ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-2 h-3 w-3" />}
@@ -244,7 +244,7 @@ export default function StoryboardPanel({
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleGenerateFrame(frame.frame, `${frame.setting}, ${frame.action}`)}
+                            onClick={() => handleGenerateFrame(frame.frame, (frame as any).visual_prompt || `${frame.setting}, ${frame.action}`)}
                             disabled={isGeneratingThis || !imageModel || !aiEnabled}
                           >
                             {isGeneratingThis ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <ImagePlus className="mr-2 h-3 w-3" />}
