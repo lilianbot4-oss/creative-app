@@ -174,6 +174,7 @@ export type ConceptAsset = {
   width: number | null;
   height: number | null;
   file_size: number | null;
+  meta?: Record<string, unknown> | null;
   is_primary: boolean;
   created_at: string;
 };
