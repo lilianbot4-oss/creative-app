@@ -3,7 +3,7 @@
 An MVP workspace for freelance creative advertisers to organize clients, projects, briefs, and generate pitch-ready campaign outputs with AI.
 
 ## Tech stack
-- Next.js 16 App Router + TypeScript
+- Next.js 15 App Router + TypeScript
 - Supabase (Auth, Postgres, Storage)
 - Tailwind CSS v4 + shadcn/ui
 - AI SDK with OpenAI + Google (Gemini/Imagen)
@@ -36,7 +36,6 @@ Copy `.env.example` to `.env.local` and fill in:
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `OPENAI_API_KEY`
 - `GEMINI_API_KEY` (needed for Google image generation)
-- `OPENAI_MODEL` (optional)
 
 ### 6) Run locally
 ```bash
@@ -78,8 +77,6 @@ If you log in and see an empty dashboard, use **Create demo data** to seed a sam
 
 ## Improvements to tackle next
 - **Storyboard visuals**: when a user checks “Include AI-generated frame visuals,” the storyboard should actually create images (right now it’s text-only).
-- **Project-level AI settings**: let each project choose its own AI model settings, or remove the unused project settings table to avoid confusion.
-- **Docs cleanup**: make sure the README and setup notes match the current versions and settings (for example, whether `OPENAI_MODEL` is still used).
 - **Automated tests**: add tests for the most important user flows (log in, create a project, generate ideas, export).
 - **CI checks**: run linting, type checks, and tests automatically on every pull request.
 - **Error monitoring**: add logging/alerts so failures in AI calls or file uploads are easier to spot.
