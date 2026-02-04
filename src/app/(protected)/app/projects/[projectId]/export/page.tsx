@@ -17,6 +17,7 @@ import MarkdownContent from "@/components/markdown/markdown-content";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 import type { Client, Project } from "@/lib/types";
 import { getPublicStorageUrl } from "@/lib/storage";
 import KeyVisualPreview from "@/components/media/key-visual-preview";
@@ -116,6 +117,12 @@ export default async function ExportPage({ params, searchParams }: ExportPagePro
   }
 
   const storyboard = primaryScript ? await getStoryboard(primaryScript.id) : null;
+
+  const assetsByScript = primaryScript
+    ? conceptAssets.filter(
+        (asset) => asset.script_id === primaryScript.id && asset.asset_type === "storyboard_frame"
+      )
+    : [];
 
   const primaryVisualByConcept = new Map(
     conceptAssets
@@ -333,14 +340,41 @@ export default async function ExportPage({ params, searchParams }: ExportPagePro
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid gap-3 md:grid-cols-2 text-sm">
-                {storyboard.frames.map((frame) => (
-                  <div key={frame.frame} className="rounded-xl border border-border/60 p-3">
-                    <p className="font-medium">Frame {frame.frame}</p>
-                    <p className="text-xs text-muted-foreground">{frame.shot}</p>
-                    <p>{frame.setting}</p>
-                    <p className="text-muted-foreground">{frame.action}</p>
-                  </div>
-                ))}
+                {storyboard.frames.map((frame, index) => {
+                  const asset = assetsByScript.find(
+                    (a) =>
+                      (a.meta as any)?.frame_index === frame.frame ||
+                      (a.meta as any)?.frame_index === index + 1
+                  );
+
+                  return (
+                    <div
+                      key={frame.frame}
+                      className="overflow-hidden rounded-xl border border-border/60"
+                    >
+                      {asset ? (
+                        <div className="relative aspect-video w-full bg-muted">
+                          <Image
+                            src={
+                              asset.storage_path.startsWith("http")
+                                ? asset.storage_path
+                                : getPublicStorageUrl(asset.storage_bucket, asset.storage_path)
+                            }
+                            alt={frame.action}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      ) : null}
+                      <div className="p-3">
+                        <p className="font-medium">Frame {frame.frame}</p>
+                        <p className="text-xs text-muted-foreground">{frame.shot}</p>
+                        <p>{frame.setting}</p>
+                        <p className="text-muted-foreground">{frame.action}</p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
               {storyboard.shotlist ? (
                 <pre className="whitespace-pre-wrap rounded-2xl bg-muted/50 p-4 text-xs">
