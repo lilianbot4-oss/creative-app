@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MISSION CONTROL // IAN</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --card-bg: #111;
+            --accent-primary: #00ff9d; /* Neon Green */
+            --accent-secondary: #00b8ff; /* Neon Blue */
+            --accent-danger: #ff0055; /* Neon Red */
+            --accent-warn: #ffcc00; /* Neon Yellow */
+            --text-main: #eee;
+            --text-dim: #888;
+            --font-display: 'Courier New', Courier, monospace;
+            --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 40, 60, 0.2) 0%, transparent 60%),
+                linear-gradient(0deg, rgba(0,255,157,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,157,0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            animation: gridScan 20s linear infinite;
+        }
+
+        @keyframes gridScan {
+            0% { background-position: 50% 50%, 0 0, 0 0; }
+            100% { background-position: 50% 50%, 0 40px, 0 40px; }
+        }
+
+        h1, h2, h3 {
+            font-family: var(--font-display);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 0 0 10px 0;
+            text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--accent-primary);
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+        }
+
+        .status-badge {
+            font-family: var(--font-display);
+            background: rgba(0, 255, 157, 0.1);
+            border: 1px solid var(--accent-primary);
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            color: var(--accent-primary);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 157, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 255, 157, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 157, 0); }
+        }
+
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .column {
+            background: rgba(20, 20, 20, 0.8);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, border-color 0.2s;
+            backdrop-filter: blur(5px);
+        }
+
+        .column:hover {
+            border-color: var(--accent-secondary);
+            transform: translateY(-2px);
+        }
+
+        .column-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            color: var(--accent-secondary);
+        }
+
+        .column-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .task-list {
+            min-height: 100px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-left: 3px solid var(--text-dim);
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 0 4px 4px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            cursor: grab;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            background: #1a1a1a;
+            transform: translateX(5px);
+            box-shadow: -5px 0 15px rgba(0, 184, 255, 0.1);
+            border-left-color: var(--accent-secondary);
+        }
+
+        .card.urgent { border-left-color: var(--accent-danger); }
+        .card.done { border-left-color: var(--accent-primary); opacity: 0.7; text-decoration: line-through; }
+        .card.monitor { border-left-color: var(--accent-warn); }
+
+        .card-title {
+            font-size: 0.95rem;
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+
+        .card-meta {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+        }
+
+        .tag {
+            background: #222;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: var(--font-display);
+        }
+
+        /* Glitch Effect on Title */
+        .glitch {
+            position: relative;
+        }
+        .glitch::before, .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .glitch::before {
+            left: 2px;
+            text-shadow: -1px 0 red;
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        .glitch::after {
+            left: -2px;
+            text-shadow: -1px 0 blue;
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(11px, 9999px, 81px, 0); }
+            20% { clip: rect(69px, 9999px, 13px, 0); }
+            40% { clip: rect(23px, 9999px, 86px, 0); }
+            60% { clip: rect(3px, 9999px, 44px, 0); }
+            80% { clip: rect(55px, 9999px, 2px, 0); }
+            100% { clip: rect(18px, 9999px, 53px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(65px, 9999px, 100px, 0); }
+            20% { clip: rect(28px, 9999px, 12px, 0); }
+            40% { clip: rect(4px, 9999px, 63px, 0); }
+            60% { clip: rect(98px, 9999px, 44px, 0); }
+            80% { clip: rect(15px, 9999px, 3px, 0); }
+            100% { clip: rect(72px, 9999px, 83px, 0); }
+        }
+
+        footer {
+            margin-top: 40px;
+            border-top: 1px solid #333;
+            padding-top: 20px;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            text-align: center;
+            font-family: var(--font-display);
+        }
+
+        /* Specific styles for sections */
+        #priorities .column-title { color: var(--accent-danger); }
+        #pipeline .column-title { color: var(--accent-secondary); }
+        #mission .column-title { color: #fff; text-shadow: 0 0 5px white; }
+        
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1 class="glitch" data-text="IAN // MISSION CONTROL">IAN // MISSION CONTROL</h1>
+            <div style="font-size: 0.8rem; color: var(--text-dim); letter-spacing: 1px;">OPERATOR: LILIAN | SYSTEM: ONLINE</div>
+        </div>
+        <div class="status-badge">DEFCON 3</div>
+    </header>
+
+    <div class="kanban-board">
+
+        <div class="column">
+            <div class="column-header">
+                <span class="column-title">🎯 🎯 TOP PRIORITIES</span>
+                <span>4</span>
+            </div>
+            <div class="task-list">
+                
+                    <div class="card  ">
+                        <div class="card-title">Send Thank You / Follow-up to Ambience Healthcare</div>
+                        <div class="card-meta">
+                            <span>Phone Screen completed</span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+                    <div class="card  ">
+                        <div class="card-title">Update Zapier MCP for Zoom/Calendar</div>
+                        <div class="card-meta">
+                            <span>Real links</span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+                    <div class="card  ">
+                        <div class="card-title">Tailor Resume for Maven Clinic Staff PM Role</div>
+                        <div class="card-meta">
+                            <span></span>
+                            <span class="tag">CAREER</span>
+                        </div>
+                    </div>
+                
+                    <div class="card  ">
+                        <div class="card-title">Follow up with Dan Greenberg</div>
+                        <div class="card-meta">
+                            <span>Zoom @ Thu 12:00 PM ET</span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+            </div>
+        </div>
+    
+
+        <div class="column">
+            <div class="column-header">
+                <span class="column-title">📋 📋 JOB SEARCH PIPE</span>
+                <span>4</span>
+            </div>
+            <div class="task-list">
+                
+                    <div class="card done ">
+                        <div class="card-title">SmarterDx - Sr. Product Manager, AI/ML</div>
+                        <div class="card-meta">
+                            <span>Remote</span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+                    <div class="card  ">
+                        <div class="card-title">Ambience Healthcare - Clinician Success</div>
+                        <div class="card-meta">
+                            <span>Phone Screen DONE</span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+                    <div class="card  ">
+                        <div class="card-title">IMO Health - Product Owner, Clinical AI</div>
+                        <div class="card-meta">
+                            <span>Remote</span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+                    <div class="card  ">
+                        <div class="card-title">CareMessage - Sr. Product Manager, Data & Interoperability</div>
+                        <div class="card-meta">
+                            <span>Remote</span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+            </div>
+        </div>
+    
+
+        <div class="column">
+            <div class="column-header">
+                <span class="column-title">🔹 🧠 INTELLIGENCE & MONITORING</span>
+                <span>2</span>
+            </div>
+            <div class="task-list">
+                
+                    <div class="card  ">
+                        <div class="card-title">Monitor Twitter for OpenClaw skills & Clinical AI news</div>
+                        <div class="card-meta">
+                            <span>Daily</span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+                    <div class="card  ">
+                        <div class="card-title">Nightly System Hardening & Security Audit</div>
+                        <div class="card-meta">
+                            <span>Daily @ 1AM ET</span>
+                            <span class="tag">SEC</span>
+                        </div>
+                    </div>
+                
+            </div>
+        </div>
+    
+
+        <div class="column">
+            <div class="column-header">
+                <span class="column-title">🔹 🛠️ TONIGHT'S MISSION (OVERNIGHT)</span>
+                <span>5</span>
+            </div>
+            <div class="task-list">
+                
+                    <div class="card done ">
+                        <div class="card-title">**Coding:** Implement AI storyboard visuals in `creative-app`</div>
+                        <div class="card-meta">
+                            <span>Review in GitHub Issue #8</span>
+                            <span class="tag">CODE</span>
+                        </div>
+                    </div>
+                
+                    <div class="card done ">
+                        <div class="card-title">**Security:** Full audit</div>
+                        <div class="card-meta">
+                            <span>Ports, Skills, API Budgets</span>
+                            <span class="tag">SEC</span>
+                        </div>
+                    </div>
+                
+                    <div class="card done ">
+                        <div class="card-title">**Research:** Final polish on Ambience Healthcare "Clinician Success" intel</div>
+                        <div class="card-meta">
+                            <span></span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+                    <div class="card done ">
+                        <div class="card-title">**A/B Test:** Gemini 3 Pro vs. Kimi k2.5</div>
+                        <div class="card-meta">
+                            <span>Coding analysis</span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+                    <div class="card done ">
+                        <div class="card-title">**Design:** Kimi k2.5 to redesign Kanban into an "insane" interactive UI</div>
+                        <div class="card-meta">
+                            <span></span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+            </div>
+        </div>
+    
+
+        <div class="column">
+            <div class="column-header">
+                <span class="column-title">🔹 🍼 FAMILY & PERSONAL</span>
+                <span>2</span>
+            </div>
+            <div class="task-list">
+                
+                    <div class="card  ">
+                        <div class="card-title">Abigail's Milestones Log</div>
+                        <div class="card-meta">
+                            <span></span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+                    <div class="card  ">
+                        <div class="card-title">Emily's "Not a Threat" Affirmation Check-in</div>
+                        <div class="card-meta">
+                            <span>Weekly</span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+            </div>
+        </div>
+    
+
+        <div class="column">
+            <div class="column-header">
+                <span class="column-title">✅ ✅ DONE</span>
+                <span>7</span>
+            </div>
+            <div class="task-list">
+                
+                    <div class="card done ">
+                        <div class="card-title">Prep for Ambience Healthcare Phone Screen</div>
+                        <div class="card-meta">
+                            <span>Wed @ 10:00 AM</span>
+                            <span class="tag">PREP</span>
+                        </div>
+                    </div>
+                
+                    <div class="card done ">
+                        <div class="card-title">Send Jew joke to Daniel Greenberg</div>
+                        <div class="card-meta">
+                            <span></span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+                    <div class="card done ">
+                        <div class="card-title">Introduce Lilian to Emily</div>
+                        <div class="card-meta">
+                            <span></span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+                    <div class="card done ">
+                        <div class="card-title">Nuke malicious `clawhub` skill</div>
+                        <div class="card-meta">
+                            <span></span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+                    <div class="card done ">
+                        <div class="card-title">Install `prompt-guard` security layer</div>
+                        <div class="card-meta">
+                            <span></span>
+                            <span class="tag">SEC</span>
+                        </div>
+                    </div>
+                
+                    <div class="card done ">
+                        <div class="card-title">PR Review for Storyboard Visuals</div>
+                        <div class="card-meta">
+                            <span></span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+                    <div class="card done ">
+                        <div class="card-title">Create KANBAN_REIMAGINED.html</div>
+                        <div class="card-meta">
+                            <span></span>
+                            <span class="tag">TASK</span>
+                        </div>
+                    </div>
+                
+            </div>
+        </div>
+    
+
+        <div class="column">
+            <div class="column-header">
+                <span class="column-title">🔹 📦 ARCHIVE</span>
+                <span>0</span>
+            </div>
+            <div class="task-list">
+                
+            </div>
+        </div>
+    
+    </div>
+            <div class="task-list">
+                <div class="card urgent">
+                    <div class="card-title">Prep for Ambience Healthcare Phone Screen</div>
+                    <div class="card-meta"><span>Wed @ 10:00 AM</span><span class="tag">INTERVIEW</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Update Zapier MCP for Zoom/Calendar</div>
+                    <div class="card-meta"><span>Real links</span><span class="tag">DEV</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Tailor Resume for Maven Clinic Staff PM Role</div>
+                    <div class="card-meta"><span>Doc</span><span class="tag">CAREER</span></div>
+                </div>
+                <div class="card urgent">
+                    <div class="card-title">Follow up with Dan Greenberg</div>
+                    <div class="card-meta"><span>Thu 12:00 PM ET</span><span class="tag">NETWORKING</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Search Pipe -->
+        <div class="column" id="pipeline">
+            <div class="column-header">
+                <span class="column-title">📋 JOB PIPELINE</span>
+                <span>3</span>
+            </div>
+            <div class="task-list">
+                <div class="card done">
+                    <div class="card-title">SmarterDx - Sr. Product Manager, AI/ML</div>
+                    <div class="card-meta"><span>Remote</span><span class="tag">APPLIED</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">IMO Health - Product Owner, Clinical AI</div>
+                    <div class="card-meta"><span>Remote</span><span class="tag">TO APPLY</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">CareMessage - Sr. Product Manager</div>
+                    <div class="card-meta"><span>Data & Interop</span><span class="tag">TO APPLY</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tonight's Mission -->
+        <div class="column" id="mission">
+            <div class="column-header">
+                <span class="column-title">🛠️ TONIGHT'S MISSION</span>
+                <span>5</span>
+            </div>
+            <div class="task-list">
+                <div class="card">
+                    <div class="card-title">Coding: Implement AI storyboard visuals</div>
+                    <div class="card-meta"><span>creative-app</span><span class="tag">CODE</span></div>
+                </div>
+                <div class="card urgent">
+                    <div class="card-title">Security: Full Audit</div>
+                    <div class="card-meta"><span>Ports, API Budgets</span><span class="tag">SEC</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Research: Ambience "Clinician Success" Intel</div>
+                    <div class="card-meta"><span>Polish</span><span class="tag">RESEARCH</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">A/B Test: Gemini 3 Pro vs. Kimi k2.5</div>
+                    <div class="card-meta"><span>Coding Analysis</span><span class="tag">TEST</span></div>
+                </div>
+                 <div class="card done">
+                    <div class="card-title">Design: Kimi k2.5 Kanban UI Redesign</div>
+                    <div class="card-meta"><span>DONE</span><span class="tag">META</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Intel & Monitoring -->
+        <div class="column">
+            <div class="column-header">
+                <span class="column-title">🧠 INTEL & MONITOR</span>
+                <span>2</span>
+            </div>
+            <div class="task-list">
+                <div class="card monitor">
+                    <div class="card-title">Monitor Twitter: OpenClaw & Clinical AI</div>
+                    <div class="card-meta"><span>Daily</span><span class="tag">INTEL</span></div>
+                </div>
+                <div class="card monitor">
+                    <div class="card-title">System Hardening & Security Audit</div>
+                    <div class="card-meta"><span>Daily @ 1AM ET</span><span class="tag">SEC</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Family -->
+        <div class="column">
+            <div class="column-header">
+                <span class="column-title">🍼 FAMILY BASE</span>
+                <span>2</span>
+            </div>
+            <div class="task-list">
+                <div class="card">
+                    <div class="card-title">Abigail's Milestones Log</div>
+                    <div class="card-meta"><span>Log</span><span class="tag">FAMILY</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Emily's "Not a Threat" Check-in</div>
+                    <div class="card-meta"><span>Weekly</span><span class="tag">RELATIONSHIP</span></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        SYS_TIME: <span id="clock">--:--:--</span> | Kimi k2.5 Rendering Engine | <a href="https://telegra.ph/Ians-Mission-Control-Archive-02-03" style="color: var(--text-dim);">ARCHIVE ACCESS</a>
+    </footer>
+
+    <script>
+        // Simple Clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toISOString().split('T')[1].split('.')[0] + ' UTC';
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Drag and Drop Logic (Basic)
+        const cards = document.querySelectorAll('.card');
+        const lists = document.querySelectorAll('.task-list');
+
+        cards.forEach(card => {
+            card.addEventListener('dragstart', () => {
+                card.classList.add('dragging');
+            });
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging');
+            });
+            card.setAttribute('draggable', true);
+        });
+
+        lists.forEach(list => {
+            list.addEventListener('dragover', e => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(list, e.clientY);
+                const draggable = document.querySelector('.dragging');
+                if (afterElement == null) {
+                    list.appendChild(draggable);
+                } else {
+                    list.insertBefore(draggable, afterElement);
+                }
+            });
+        });
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.card:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+    </script>
+</body>
+</html>
