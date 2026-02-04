@@ -107,6 +107,14 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   });
   const assetsByConcept = Object.fromEntries(assetsByConceptEntries);
 
+  const assetsByScriptEntries = scripts.map((script) => {
+    const assets = conceptAssets.filter(
+      (asset) => asset.script_id === script.id && asset.asset_type === "storyboard_frame"
+    );
+    return [script.id, assets];
+  });
+  const assetsByScript = Object.fromEntries(assetsByScriptEntries);
+
   return (
     <ProjectWorkspace
       project={project}
@@ -121,6 +129,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       references={references}
       concepts={concepts}
       assetsByConcept={assetsByConcept}
+      assetsByScript={assetsByScript}
       variantsByConcept={variantsByConcept}
       scripts={scripts}
       storyboardsByScript={storyboardsByScript}

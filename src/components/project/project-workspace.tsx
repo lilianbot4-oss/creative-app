@@ -123,6 +123,7 @@ export default function ProjectWorkspace({
   references,
   concepts,
   assetsByConcept,
+  assetsByScript,
   variantsByConcept,
   scripts,
   storyboardsByScript,
@@ -142,6 +143,7 @@ export default function ProjectWorkspace({
   references: Reference[];
   concepts: Concept[];
   assetsByConcept: Record<string, ConceptAsset[]>;
+  assetsByScript: Record<string, ConceptAsset[]>;
   variantsByConcept: Record<string, ConceptVariant[]>;
   scripts: Script[];
   storyboardsByScript: Record<string, Storyboard | null>;
@@ -588,6 +590,7 @@ export default function ProjectWorkspace({
               projectId={project.id}
               scripts={scripts}
               storyboardsByScript={storyboardsByScript}
+              assetsByScript={assetsByScript}
               aiEnabled={aiEnabled}
               imageModel={aiSettings.image_model ?? null}
             />

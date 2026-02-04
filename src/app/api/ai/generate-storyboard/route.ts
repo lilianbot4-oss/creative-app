@@ -162,6 +162,14 @@ export async function POST(request: Request) {
       metadata: { script_id: script.id, frames: json.frames.length },
     });
 
+    if (parsed.data.includeImages) {
+      // Trigger background frame generations
+      // Note: In a production app, this would be a background queue.
+      // For this MVP, we return the storyboard and the client handles sequential calls to prevent timeouts.
+      // But we flag it in the response.
+      return NextResponse.json({ storyboard, triggerVisuals: true });
+    }
+
     return NextResponse.json({ storyboard });
   } catch (error) {
     console.error("Storyboard generation failed", error);

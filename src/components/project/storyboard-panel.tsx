@@ -1,29 +1,36 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { Loader2, RefreshCw, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import type { Script, Storyboard } from "@/lib/types";
+import { createClient } from "@/lib/supabase/browser";
+import type { Script, Storyboard, ConceptAsset } from "@/lib/types";
 import { SCRIPT_FORMAT_LABELS } from "@/lib/constants";
 
 export default function StoryboardPanel({
   projectId,
   scripts,
   storyboardsByScript,
+  assetsByScript,
   aiEnabled,
   imageModel,
 }: {
   projectId: string;
   scripts: Script[];
   storyboardsByScript: Record<string, Storyboard | null>;
+  assetsByScript: Record<string, ConceptAsset[]>;
   aiEnabled: boolean;
   imageModel: string | null;
 }) {
   const router = useRouter();
+  const supabase = createClient();
+  const [frameGeneratingIndex, setFrameGeneratingIndex] = useState<number | null>(null);
   const defaultScriptId = useMemo(() => {
     const primary = scripts.find((script) => script.is_primary);
     return primary?.id ?? scripts[0]?.id ?? "";
@@ -46,6 +53,38 @@ export default function StoryboardPanel({
     ? storyboardsByScript[selectedScriptId]
     : null;
 
+  const currentAssets = selectedScriptId ? assetsByScript[selectedScriptId] ?? [] : [];
+
+  const handleGenerateFrame = async (frameIndex: number, prompt: string) => {
+    if (!aiEnabled || !selectedScriptId) return;
+    
+    setFrameGeneratingIndex(frameIndex);
+    try {
+      const response = await fetch("/api/ai/generate-storyboard-frame", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          projectId, 
+          scriptId: selectedScriptId, 
+          frameIndex, 
+          prompt 
+        }),
+      });
+      
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Generation failed");
+      }
+      
+      toast.success(`Frame ${frameIndex} generated`);
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to generate frame");
+    } finally {
+      setFrameGeneratingIndex(null);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!aiEnabled) {
       toast.error("AI disabled: add OPENAI_API_KEY to .env.local and restart.");
@@ -60,7 +99,11 @@ export default function StoryboardPanel({
       const response = await fetch("/api/ai/generate-storyboard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, scriptId: selectedScriptId }),
+        body: JSON.stringify({ 
+          projectId, 
+          scriptId: selectedScriptId,
+          includeImages: withImages 
+        }),
       });
       const data = await response.json();
       if (response.status === 400 && data?.error === "Missing OPENAI_API_KEY") {
@@ -77,6 +120,17 @@ export default function StoryboardPanel({
       }
       toast.success("Storyboard generated");
       router.refresh();
+
+      if (withImages && data.storyboard?.frames) {
+        toast.info("Generating frame visuals...");
+        // Sequential generation to avoid rate limits
+        for (const frame of data.storyboard.frames) {
+           // eslint-disable-next-line @typescript-eslint/no-explicit-any
+           const frameData = frame as any;
+           await handleGenerateFrame(frameData.frame, `${frameData.setting}, ${frameData.action}`);
+        }
+        toast.success("All visuals generated");
+      }
     } catch {
       toast.error("Failed to generate storyboard");
     } finally {
@@ -128,7 +182,6 @@ export default function StoryboardPanel({
           <Button onClick={handleGenerate} disabled={!aiEnabled || isGenerating}>
             {isGenerating ? "Generating..." : "Generate storyboard"}
           </Button>
-          {/* TODO: If withImages is true, trigger image generation per frame after storyboard is created. */}
         </CardContent>
       </Card>
 
@@ -139,27 +192,80 @@ export default function StoryboardPanel({
               <CardTitle>Frames</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2">
-              {selectedStoryboard.frames.map((frame) => {
+              {selectedStoryboard.frames.map((frame, index) => {
                 const propsList = Array.isArray(frame.props)
                   ? frame.props
                   : frame.props
                     ? [String(frame.props)]
                     : [];
 
+                const asset = currentAssets.find(
+                  (a) => (a.meta as any)?.frame_index === frame.frame || (a.meta as any)?.frame_index === index + 1
+                );
+                // Fallback: look for match by index in currentAssets array if meta is missing (legacy)
+                
+                const isGeneratingThis = frameGeneratingIndex === frame.frame;
+
                 return (
                   <div
                     key={frame.frame}
-                    className="rounded-xl border border-border/60 bg-background/70 p-3 text-sm"
+                    className="overflow-hidden rounded-xl border border-border/60 bg-background/70"
                   >
-                    <p className="font-medium">Frame {frame.frame}</p>
-                    <p className="text-xs text-muted-foreground">{frame.shot}</p>
-                    <p>{frame.setting}</p>
-                    <p className="text-muted-foreground">{frame.action}</p>
-                    {frame.os_text ? <p className="text-xs">OS: {frame.os_text}</p> : null}
-                    {frame.audio ? <p className="text-xs">Audio: {frame.audio}</p> : null}
-                    {propsList.length ? (
-                      <p className="text-xs">Props: {propsList.join(", ")}</p>
-                    ) : null}
+                    <div className="relative aspect-video w-full bg-muted">
+                      {asset ? (
+                        <div className="group relative h-full w-full">
+                          <Image
+                            src={
+                              asset.storage_path.startsWith("http")
+                                ? asset.storage_path
+                                : supabase.storage
+                                    .from(asset.storage_bucket)
+                                    .getPublicUrl(asset.storage_path).data.publicUrl
+                            }
+                            alt={frame.action}
+                            fill
+                            className="object-cover"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+                             <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => handleGenerateFrame(frame.frame, `${frame.setting}, ${frame.action}`)}
+                                disabled={isGeneratingThis || !imageModel}
+                              >
+                                {isGeneratingThis ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-2 h-3 w-3" />}
+                                Regenerate
+                              </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex h-full flex-col items-center justify-center p-4 text-center text-muted-foreground">
+                          <p className="mb-2 text-xs">No visual yet</p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleGenerateFrame(frame.frame, `${frame.setting}, ${frame.action}`)}
+                            disabled={isGeneratingThis || !imageModel || !aiEnabled}
+                          >
+                            {isGeneratingThis ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <ImagePlus className="mr-2 h-3 w-3" />}
+                            Generate Visual
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3 text-sm">
+                      <div className="mb-1 flex items-center justify-between">
+                        <p className="font-medium">Frame {frame.frame}</p>
+                        <Badge variant="outline" className="text-[10px]">{frame.shot}</Badge>
+                      </div>
+                      <p className="mb-1 text-xs font-medium text-muted-foreground">{frame.setting}</p>
+                      <p className="text-sm">{frame.action}</p>
+                      {frame.os_text ? <p className="mt-2 text-xs font-medium text-blue-500">OS: {frame.os_text}</p> : null}
+                      {frame.audio ? <p className="mt-1 text-xs text-muted-foreground">Audio: {frame.audio}</p> : null}
+                      {propsList.length ? (
+                        <p className="mt-1 text-xs text-muted-foreground">Props: {propsList.join(", ")}</p>
+                      ) : null}
+                    </div>
                   </div>
                 );
               })}

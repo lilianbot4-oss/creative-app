@@ -157,4 +157,5 @@ export const rewriteScriptSchema = z.object({
 export const generateStoryboardSchema = z.object({
   projectId: z.string().uuid(),
   scriptId: z.string().uuid(),
+  includeImages: z.boolean().optional().default(false),
 });
