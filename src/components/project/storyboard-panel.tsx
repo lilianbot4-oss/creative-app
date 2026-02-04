@@ -39,6 +39,7 @@ export default function StoryboardPanel({
   const [selectedScriptId, setSelectedScriptId] = useState(defaultScriptId);
   const [withImages, setWithImages] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingVisuals, setIsGeneratingVisuals] = useState(false);
 
   const sortedScripts = useMemo(
     () => scripts.slice().sort((a, b) => (a.created_at > b.created_at ? -1 : 1)),
@@ -122,6 +123,7 @@ export default function StoryboardPanel({
       router.refresh();
 
       if (withImages && data.storyboard?.frames) {
+        setIsGeneratingVisuals(true);
         toast.info("Generating frame visuals...");
         // Sequential generation to avoid rate limits
         for (const frame of data.storyboard.frames) {
@@ -129,6 +131,7 @@ export default function StoryboardPanel({
            const frameData = frame as any;
            await handleGenerateFrame(frameData.frame, frameData.visual_prompt || `${frameData.setting}, ${frameData.action}`);
         }
+        setIsGeneratingVisuals(false);
         toast.success("All visuals generated");
       }
     } catch {
@@ -179,8 +182,8 @@ export default function StoryboardPanel({
               Image model not configured. Set one in AI Models.
             </p>
           ) : null}
-          <Button onClick={handleGenerate} disabled={!aiEnabled || isGenerating}>
-            {isGenerating ? "Generating..." : "Generate storyboard"}
+          <Button onClick={handleGenerate} disabled={!aiEnabled || isGenerating || isGeneratingVisuals}>
+            {isGenerating ? "Generating storyboard..." : isGeneratingVisuals ? "Generating visuals..." : "Generate storyboard"}
           </Button>
         </CardContent>
       </Card>
