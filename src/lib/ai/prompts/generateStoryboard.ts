@@ -1,13 +1,14 @@
-import type { CreativeSpec } from "@/lib/types";
+import type { CreativeSpec, BrandVoice } from "@/lib/types";
 import { buildGuardrails } from "@/lib/ai/guardrails";
 
 export function buildGenerateStoryboardPrompt(options: {
   spec: CreativeSpec;
   script: string;
+  brandVoice?: BrandVoice | null;
 }) {
-  const guardrails = buildGuardrails(options.spec);
+  const guardrails = buildGuardrails(options.spec, options.brandVoice);
   const systemPrompt =
-    "You are a production-minded creative. Turn scripts into clear storyboard frames and shot lists.";
+    "You are a production-minded creative. Turn scripts into clear storyboard frames and shot lists, respecting brand style guidelines.";
 
   const userPrompt = [
     "Return a JSON object with:",

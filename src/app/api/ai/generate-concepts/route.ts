@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
     const { data: project } = await supabase
       .from("projects")
-      .select("id")
+      .select("id, client:clients(brand_voice)")
       .eq("id", parsed.data.projectId)
       .eq("user_id", user.id)
       .maybeSingle();
@@ -58,10 +58,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const brandVoice = (project as any)?.client?.brand_voice ?? null;
+
     const desiredCount = parsed.data.count ?? (parsed.data.seedText ? 1 : 6);
     const { systemPrompt, userPrompt } = buildGenerateConceptsPrompt(spec, {
       seedText: parsed.data.seedText ?? null,
       count: desiredCount,
+      brandVoice,
     });
     const settings = await getResolvedAISettings(parsed.data.projectId);
     const modelId = settings.text_model ?? DEFAULT_TEXT_MODEL;

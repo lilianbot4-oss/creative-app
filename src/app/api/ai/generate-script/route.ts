@@ -35,7 +35,7 @@ export async function POST(request: Request) {
 
     const { data: project } = await supabase
       .from("projects")
-      .select("id")
+      .select("id, client:clients(brand_voice)")
       .eq("id", parsed.data.projectId)
       .eq("user_id", user.id)
       .maybeSingle();
@@ -79,11 +79,15 @@ export async function POST(request: Request) {
       ).data
       : null;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const brandVoice = (project as any)?.client?.brand_voice ?? null;
+
     const { systemPrompt, userPrompt } = buildGenerateScriptPrompt({
       spec,
       format: parsed.data.format,
       concept: concept ?? null,
       variant: variant ?? null,
+      brandVoice,
     });
 
     const settings = await getResolvedAISettings(parsed.data.projectId);

@@ -1,4 +1,4 @@
-import type { Concept, ConceptVariant, CreativeSpec } from "@/lib/types";
+import type { Concept, ConceptVariant, CreativeSpec, BrandVoice } from "@/lib/types";
 import type { ScriptFormat } from "@/lib/constants";
 import { buildGuardrails } from "@/lib/ai/guardrails";
 
@@ -7,10 +7,11 @@ export function buildGenerateScriptPrompt(options: {
   format: ScriptFormat;
   concept?: Concept | null;
   variant?: ConceptVariant | null;
+  brandVoice?: BrandVoice | null;
 }) {
-  const guardrails = buildGuardrails(options.spec);
+  const guardrails = buildGuardrails(options.spec, options.brandVoice);
   const systemPrompt =
-    "You are a senior social creative writer. Produce tight, TikTok-native scripts with clear structure.";
+    "You are a senior social creative writer. Produce tight, TikTok-native scripts with clear structure, following brand voice and constraints.";
 
   const userPrompt = [
     `Format: ${options.format}`,

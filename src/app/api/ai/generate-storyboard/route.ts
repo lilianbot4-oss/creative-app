@@ -47,6 +47,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Script not found" }, { status: 404 });
     }
 
+    const { data: project } = await supabase
+      .from("projects")
+      .select("id, client:clients(brand_voice)")
+      .eq("id", parsed.data.projectId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+
     const { data: spec } = await supabase
       .from("creative_specs")
       .select("*")
@@ -60,9 +71,13 @@ export async function POST(request: Request) {
       );
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const brandVoice = (project as any)?.client?.brand_voice ?? null;
+
     const { systemPrompt, userPrompt } = buildGenerateStoryboardPrompt({
       spec,
       script: script.script_md,
+      brandVoice,
     });
 
     const settings = await getResolvedAISettings(parsed.data.projectId);

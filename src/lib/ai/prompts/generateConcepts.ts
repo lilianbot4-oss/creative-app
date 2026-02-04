@@ -1,13 +1,13 @@
-import type { CreativeSpec } from "@/lib/types";
+import type { CreativeSpec, BrandVoice } from "@/lib/types";
 import { buildGuardrails } from "@/lib/ai/guardrails";
 
 export function buildGenerateConceptsPrompt(
   spec: CreativeSpec,
-  options?: { seedText?: string | null; count?: number }
+  options?: { seedText?: string | null; count?: number; brandVoice?: BrandVoice | null }
 ) {
-  const guardrails = buildGuardrails(spec);
+  const guardrails = buildGuardrails(spec, options?.brandVoice);
   const systemPrompt =
-    "You are a senior creative director. Generate viral-ready campaign concepts that fit the brief.";
+    "You are a senior creative director. Generate viral-ready campaign concepts that fit the brief and adhere strictly to brand voice guidelines.";
 
   const count = options?.count ?? 6;
   const seedText = options?.seedText?.trim();
